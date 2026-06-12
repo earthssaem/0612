@@ -4,13 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>진원 위치 찾기 프로젝트</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-  const firebaseConfig = {
+  const cfg={
     apiKey: "AIzaSyDazbUg9xmkA0uxocuWCjY_-AdJYGKFqk0",
     authDomain: "seismic-explorer.firebaseapp.com",
     databaseURL: "https://seismic-explorer-default-rtdb.asia-southeast1.firebasedatabase.app",
@@ -20,50 +22,65 @@
     appId: "1:255977809304:web:7a20bcaed47f48092137ed"
   };
   let db=null;
-  try{const app=initializeApp(firebaseConfig);db=getDatabase(app);}catch(e){console.error('FB init',e);}
+  try{const app=initializeApp(cfg);db=getDatabase(app);}catch(e){}
   window._fbSave=async(path,data)=>{
-    try{if(db){await set(ref(db,path),data);return true;}}catch(e){console.error('save',e);}
-    localStorage.setItem('sq_'+path.replace(/\//g,'_'),JSON.stringify(data));return false;
+    try{if(db){await set(ref(db,path),data);return;}}catch(e){}
+    localStorage.setItem('sq_'+path.replace(/\//g,'_'),JSON.stringify(data));
   };
   window._fbGetAll=async()=>{
-    try{if(db){const s=await get(ref(db,'submissions'));return s.exists()?s.val():{};}}catch(e){console.error('get',e);}
-    const r={};for(let k of Object.keys(localStorage))if(k.startsWith('sq_submissions_')){try{r[k.replace('sq_submissions_','')]=JSON.parse(localStorage.getItem(k));}catch(e){}}return r;
+    try{if(db){const s=await get(ref(db,'submissions'));if(s.exists())return s.val();}}catch(e){}
+    const r={};
+    for(let k of Object.keys(localStorage))if(k.startsWith('sq_submissions_')){
+      try{r[k.replace('sq_submissions_','')]=JSON.parse(localStorage.getItem(k));}catch(e){}
+    }
+    return r;
   };
 </script>
+
 <style>
 :root{
-  --bg:#f0f4f8;--surface:#fff;--surface2:#f7fafc;--border:#d1dce8;
-  --accent:#2563eb;--accent2:#e05c3a;--accent3:#16a34a;--warn:#d97706;
-  --text:#1a2332;--muted:#64748b;--dim:#94a3b8;
-  --mono:'Courier New',monospace;--r:10px;
-  --c0:#2563eb;--c1:#e05c3a;--c2:#16a34a;--cl0:#dbeafe;--cl1:#fee2e0;--cl2:#dcfce7;
+  --bg:#f0f4f8; --surface:#ffffff; --surface2:#f7fafc; --border:#d1dce8;
+  --accent:#2563eb; --accent2:#e05c3a; --accent3:#16a34a; --warn:#d97706;
+  --text:#1a2332; --muted:#64748b; --dim:#94a3b8;
+  --mono:'Courier New',monospace; --r:10px;
+  --c0:#2563eb; --c1:#e05c3a; --c2:#16a34a;
+  --cl0:#dbeafe; --cl1:#fee2e0; --cl2:#dcfce7;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.6;}
-.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#e0e7ff,#f0f4f8 50%,#e0f2fe);padding:20px;}
-.login-card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:36px 32px;width:420px;max-width:94vw;box-shadow:0 4px 24px rgba(37,99,235,0.08);}
-.login-logo{width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#2563eb,#7c3aed);margin:0 auto 18px;box-shadow:0 4px 16px rgba(37,99,235,0.3);}
-.login-title{text-align:center;font-size:1.15rem;font-weight:800;margin-bottom:4px;}
-.login-sub{text-align:center;font-size:0.74rem;color:var(--muted);margin-bottom:24px;line-height:1.5;}
-.form-group{margin-bottom:13px;}
+
+/* 로그인 */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,#e0e7ff 0%,#f0f4f8 50%,#e0f2fe 100%);}
+.login-card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:40px 40px;width:540px;max-width:92vw;box-shadow:0 4px 24px rgba(37,99,235,0.08);}
+.login-logo{width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,#2563eb,#7c3aed);margin:0 auto 18px;box-shadow:0 4px 16px rgba(37,99,235,0.3);display:flex;align-items:center;justify-content:center;animation:pulse 2.6s ease-in-out infinite;}
+.login-logo svg{width:34px;height:34px;}
+@keyframes pulse{0%{box-shadow:0 4px 16px rgba(37,99,235,0.3)}50%{box-shadow:0 6px 26px rgba(124,58,237,0.45)}100%{box-shadow:0 4px 16px rgba(37,99,235,0.3)}}
+.login-title{text-align:center;font-size:1.15rem;font-weight:800;margin-bottom:4px;color:var(--text);}
+.login-sub{text-align:center;font-size:0.75rem;color:var(--muted);margin-bottom:28px;line-height:1.5;}
+.form-group{margin-bottom:14px;}
 .form-group label{display:block;font-size:0.78rem;color:var(--muted);margin-bottom:5px;font-weight:600;}
-.form-group input,.form-group select{width:100%;padding:10px 12px;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r);color:var(--text);font-size:0.88rem;}
+.form-group input,.form-group select{width:100%;padding:10px 12px;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r);color:var(--text);font-size:0.88rem;transition:border-color 0.2s;}
 .form-group input:focus,.form-group select:focus{outline:none;border-color:var(--accent);}
-.name-row{display:flex;gap:8px;}
-.name-row input{flex:1;}
-.divider{height:1px;background:var(--border);margin:20px 0;position:relative;}
+.divider{height:1px;background:var(--border);margin:22px 0;position:relative;}
 .divider span{position:absolute;top:-9px;left:50%;transform:translateX(-50%);background:#fff;padding:0 12px;font-size:0.72rem;color:var(--dim);}
+
+/* 헤더 */
 header{border-bottom:1px solid var(--border);padding:13px 24px;display:flex;align-items:center;gap:12px;background:#fff;position:sticky;top:0;z-index:1500;box-shadow:0 1px 4px rgba(0,0,0,0.06);}
-.logo-sm{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#2563eb,#7c3aed);flex-shrink:0;}
-header h1{font-size:0.97rem;font-weight:800;}
+.logo-sm{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#2563eb,#7c3aed);flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+.logo-sm svg{width:19px;height:19px;}
+header h1{font-size:0.97rem;font-weight:800;color:var(--text);}
 header .badge{font-size:0.7rem;color:var(--muted);}
 .user-info{margin-left:auto;font-size:0.78rem;color:var(--muted);display:flex;align-items:center;gap:8px;}
-.steps-nav{display:flex;border-bottom:1px solid var(--border);background:#fff;overflow-x:auto;scrollbar-width:none;position:sticky;top:57px;z-index:1400;}
-.step-tab{padding:11px 14px;font-size:0.76rem;color:var(--muted);border-bottom:2.5px solid transparent;cursor:pointer;white-space:nowrap;transition:all 0.2s;display:flex;align-items:center;gap:6px;}
+
+/* 단계 탭 */
+.steps-nav{display:flex;border-bottom:1px solid var(--border);background:#fff;overflow-x:auto;scrollbar-width:none;position:sticky;top:57px;z-index:1400;box-shadow:0 1px 0 var(--border);}
+.step-tab{padding:11px 15px;font-size:0.77rem;color:var(--muted);border-bottom:2.5px solid transparent;cursor:pointer;white-space:nowrap;transition:all 0.2s;display:flex;align-items:center;gap:6px;}
 .step-tab:hover{color:var(--text);}
 .step-tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600;}
-.step-num{width:18px;height:18px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:0.64rem;font-weight:700;flex-shrink:0;color:var(--muted);}
+.step-num{width:18px;height:18px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:700;flex-shrink:0;color:var(--muted);}
 .step-tab.active .step-num{background:var(--accent);color:#fff;}
+
 main{max-width:980px;margin:0 auto;padding:24px 20px;}
 .panel{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:22px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,0.04);}
 .panel-label{font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:14px;font-weight:700;}
@@ -71,14 +88,29 @@ main{max-width:980px;margin:0 auto;padding:24px 20px;}
 .info-box strong{color:var(--accent);}
 .tip-box{background:#fffbeb;border-left:3px solid var(--warn);border-radius:0 var(--r) var(--r) 0;padding:11px 14px;font-size:0.8rem;color:#78350f;margin-bottom:14px;line-height:1.7;}
 .warn-box{background:#fef2f2;border-left:3px solid #dc2626;border-radius:0 var(--r) var(--r) 0;padding:14px 16px;font-size:0.82rem;color:#7f1d1d;margin-bottom:14px;line-height:1.8;}
+.success-box{background:#f0fdf4;border-left:3px solid var(--accent3);border-radius:0 var(--r) var(--r) 0;padding:11px 14px;font-size:0.82rem;color:#14532d;margin-bottom:14px;}
+
+/* 지진/관측소 */
 .eq-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;}
 .eq-card{border:1.5px solid var(--border);border-radius:var(--r);padding:16px;cursor:pointer;transition:all 0.2s;background:var(--surface2);}
 .eq-card:hover{border-color:var(--accent);box-shadow:0 2px 8px rgba(37,99,235,0.1);}
 .eq-card.selected{border-color:var(--accent);background:#eff6ff;}
 .eq-mag{font-size:2rem;font-weight:800;font-family:var(--mono);line-height:1;}
-.eq-mag.big{color:#dc2626;}.eq-mag.med{color:#d97706;}
-.eq-name{font-weight:700;margin-top:8px;}
+.eq-mag.big{color:#dc2626;} .eq-mag.med{color:#d97706;}
+.eq-name{font-weight:700;margin-top:8px;color:var(--text);}
 .eq-meta{font-size:0.75rem;color:var(--muted);margin-top:3px;}
+.sta-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;}
+.sta-card{border:1.5px solid var(--border);border-radius:var(--r);padding:10px 12px;cursor:pointer;transition:all 0.2s;background:var(--surface2);}
+.sta-card:hover{border-color:var(--accent);}
+.sta-card.sel-0{border-color:var(--c0);background:var(--cl0);}
+.sta-card.sel-1{border-color:var(--c1);background:var(--cl1);}
+.sta-card.sel-2{border-color:var(--c2);background:var(--cl2);}
+.sta-card.locked{opacity:0.3;pointer-events:none;}
+.sta-name{font-weight:700;font-size:0.95rem;color:var(--text);}
+.sta-code{font-size:0.68rem;color:var(--muted);font-family:var(--mono);}
+.sta-coord{font-size:0.7rem;color:var(--dim);margin-top:3px;}
+
+/* 테이블 */
 table{width:100%;border-collapse:collapse;font-size:0.83rem;}
 th{text-align:left;padding:9px 11px;color:var(--muted);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.05em;border-bottom:1.5px solid var(--border);background:var(--surface2);}
 td{padding:11px;border-bottom:1px solid var(--border);vertical-align:middle;}
@@ -88,14 +120,20 @@ tr:last-child td{border-bottom:none;}
 .psv{color:var(--warn);font-family:var(--mono);font-weight:700;}
 .dv{color:var(--c2);font-family:var(--mono);}
 .sdot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:middle;}
+
+/* 지도 */
 .lmap{width:100%;height:500px;border-radius:var(--r);border:1.5px solid var(--border);z-index:1;}
 .coord-label{background:rgba(255,255,255,0.92)!important;color:#1e3a8a!important;border:1px solid #bfdbfe!important;border-radius:3px!important;font-family:'Courier New',monospace!important;font-size:10px!important;padding:1px 4px!important;box-shadow:none!important;white-space:nowrap;}
 .sta-label{background:rgba(255,255,255,0.95)!important;border:1px solid #e2e8f0!important;border-radius:4px!important;font-weight:700!important;font-size:11px!important;padding:2px 6px!important;box-shadow:0 1px 4px rgba(0,0,0,0.12)!important;white-space:nowrap;color:#1a2332!important;}
+
+/* 원점 선택 */
 .origin-btns{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
 .orig-btn{padding:7px 15px;border-radius:20px;border:1.5px solid var(--border);background:#fff;color:var(--muted);font-size:0.77rem;cursor:pointer;transition:all 0.2s;}
 .orig-btn:hover{border-color:var(--accent);color:var(--accent);}
 .orig-btn.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700;}
 .coord-bar{font-family:var(--mono);font-size:0.75rem;color:var(--muted);background:var(--surface2);padding:8px 12px;border-radius:6px;margin-top:10px;display:flex;gap:16px;flex-wrap:wrap;border:1px solid var(--border);}
+
+/* 수학 카드 */
 .math-3col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
 @media(max-width:680px){.math-3col{grid-template-columns:1fr;}}
 .math-card{background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r);padding:16px;}
@@ -103,41 +141,44 @@ tr:last-child td{border-bottom:none;}
 .math-prompt{font-family:var(--mono);font-size:0.78rem;color:var(--muted);background:#fff;border:1px solid var(--border);border-radius:6px;padding:9px 11px;margin-bottom:10px;line-height:1.8;}
 textarea{width:100%;padding:10px 12px;background:#fff;border:1.5px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:0.85rem;resize:vertical;min-height:54px;line-height:1.7;}
 textarea:focus{outline:none;border-color:var(--accent);}
-.answer-textarea{font-family:'Segoe UI',sans-serif;min-height:90px;}
 .hint-sm{font-size:0.7rem;color:var(--dim);margin-top:4px;}
 .parse-msg{font-size:0.75rem;margin-top:6px;padding:6px 9px;border-radius:4px;display:none;}
 .parse-msg.show{display:block;}
 .parse-msg.warn{color:#92400e;background:#fef3c7;border:1px solid #fcd34d;}
-.parse-msg.ok{color:#16a34a;background:#f0fdf4;border:1px solid #86efac;}
 .sup-btn{padding:5px 12px;border-radius:6px;border:1.5px solid var(--border);background:#fff;color:var(--accent);font-size:0.8rem;font-family:var(--mono);cursor:pointer;margin-top:6px;font-weight:700;}
 .sup-btn:hover{border-color:var(--accent);background:var(--cl0);}
-.hint-btn{padding:6px 14px;border-radius:6px;border:1.5px dashed var(--warn);background:#fffbeb;color:var(--warn);font-size:0.78rem;cursor:pointer;font-weight:600;margin-bottom:10px;}
-.hint-btn:hover{background:#fef3c7;}
-.hint-reveal{display:none;background:#fffbeb;border:1px solid #fcd34d;border-radius:6px;padding:12px 14px;margin-bottom:12px;font-size:0.82rem;color:#78350f;line-height:1.8;}
-.hint-reveal.show{display:block;}
+
+/* 내 방정식 표시 */
 .my-eq-box{background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r);padding:12px 14px;margin-bottom:10px;}
 .eq-label{font-size:0.7rem;color:var(--muted);margin-bottom:5px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;}
 .eq-text{font-family:var(--mono);font-size:0.85rem;color:var(--text);white-space:pre-wrap;word-break:break-all;}
 .eq-text.empty{color:var(--dim);font-style:italic;}
+
+/* 교점 */
 .intersect-wrap{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
 @media(max-width:680px){.intersect-wrap{grid-template-columns:1fr;}}
 .intersect-card{background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r);padding:14px;}
 .intersect-card h5{font-size:0.78rem;font-weight:700;color:var(--muted);margin-bottom:10px;line-height:1.5;}
-.xy-row{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
-.xy-row label{font-family:var(--mono);font-size:0.8rem;color:var(--muted);width:18px;flex-shrink:0;font-weight:700;}
-.xy-row input{flex:1;padding:7px 9px;background:#fff;border:1.5px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:0.82rem;}
+.xy-row{display:flex;gap:7px;align-items:center;margin-bottom:8px;}
+.xy-row label{font-family:var(--mono);font-size:0.85rem;color:var(--muted);flex-shrink:0;font-weight:700;white-space:nowrap;}
+.xy-row input{width:96px;flex:0 0 auto;padding:7px 9px;background:#fff;border:1.5px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:0.82rem;}
 .xy-row input:focus{outline:none;border-color:var(--accent);}
+.xy-row .unit{font-size:0.8rem;color:var(--muted);font-weight:600;}
+
+/* 결과 */
 .result-box{background:linear-gradient(135deg,#eff6ff,#f0fdf4);border:1.5px solid #bfdbfe;border-radius:var(--r);padding:20px 24px;text-align:center;}
 .result-coords{font-family:var(--mono);font-size:1.3rem;font-weight:800;color:var(--accent);margin:8px 0;}
 .result-err{font-size:0.8rem;color:var(--accent3);margin-top:6px;}
+
+/* 3D 캔버스 */
 .threed-wrap{width:100%;border-radius:var(--r);border:1.5px solid var(--border);overflow:hidden;background:#0a0e1a;position:relative;}
 .threed-wrap canvas{display:block;width:100%!important;height:auto!important;}
-.sim-steps{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
-.sim-step-btn{padding:9px 16px;border-radius:8px;border:1.5px solid var(--border);background:#fff;color:var(--muted);font-size:0.8rem;cursor:pointer;font-weight:600;transition:all 0.2s;}
-.sim-step-btn:hover{border-color:var(--accent);}
-.sim-step-btn.done{background:#f0fdf4;border-color:var(--accent3);color:var(--accent3);}
-.sim-step-btn.current{background:var(--accent);border-color:var(--accent);color:#fff;}
-.sim-step-btn:disabled{opacity:0.4;cursor:not-allowed;}
+.threed-overlay{position:absolute;top:12px;left:12px;font-size:0.72rem;color:rgba(255,255,255,0.6);pointer-events:none;line-height:1.8;}
+
+/* 깊이 테이블 */
+.depth-table-wrap{margin-top:14px;}
+
+/* 버튼 */
 .btn{padding:9px 20px;border-radius:var(--r);border:none;font-size:0.82rem;font-weight:600;cursor:pointer;transition:all 0.15s;}
 .btn-primary{background:var(--accent);color:#fff;}
 .btn-primary:hover{background:#1d4ed8;}
@@ -148,59 +189,53 @@ textarea:focus{outline:none;border-color:var(--accent);}
 .btn-success:hover{background:#15803d;}
 .flex-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
 .sp{flex:1;}
+
+/* 교사 */
 .teacher-wrap{padding:24px 20px;max-width:980px;margin:0 auto;}
 .sub-card{background:#fff;border:1px solid var(--border);border-radius:var(--r);margin-bottom:12px;overflow:hidden;}
-.sub-header{padding:14px 18px;display:flex;align-items:center;gap:10px;cursor:pointer;}
+.sub-header{padding:14px 18px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:background 0.15s;}
 .sub-header:hover{background:var(--surface2);}
 .sub-name{font-weight:700;font-size:0.9rem;}
 .sub-meta{font-size:0.75rem;color:var(--muted);}
 .sub-body{display:none;padding:16px 18px;border-top:1px solid var(--border);}
 .sub-body.open{display:block;}
-.sub-row{display:grid;grid-template-columns:160px 1fr;gap:8px;margin-bottom:8px;font-size:0.8rem;align-items:start;}
+.sub-row{display:grid;grid-template-columns:180px 1fr;gap:8px;margin-bottom:8px;font-size:0.8rem;align-items:start;}
 .sub-label{color:var(--muted);}
 .sub-val{font-family:var(--mono);color:var(--text);word-break:break-all;white-space:pre-wrap;}
 .sub-val.ans{color:var(--accent3);}
-.sub-val.essay{font-family:'Segoe UI',sans-serif;background:var(--surface2);padding:8px 10px;border-radius:6px;border:1px solid var(--border);}
 .sub-section{font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--dim);margin:14px 0 6px;font-weight:700;}
-.badge-t{background:var(--warn);color:#fff;padding:3px 10px;border-radius:20px;font-size:0.72rem;font-weight:700;}
+
 .step-content{display:none;}
 .step-content.active{display:block;}
 .hidden{display:none!important;}
 .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:0.73rem;color:var(--muted);margin-top:10px;align-items:center;}
 .leg-dot{width:9px;height:9px;border-radius:50%;}
 .leg-item{display:flex;align-items:center;gap:5px;}
-.fb-status{font-size:0.7rem;padding:3px 8px;border-radius:10px;}
-.fb-on{background:#dcfce7;color:#16a34a;}
-.fb-off{background:#fee2e0;color:#dc2626;}
-.sel-hint{font-size:0.8rem;color:var(--muted);margin-top:10px;padding:8px 12px;background:var(--surface2);border-radius:6px;}
+.badge-t{background:var(--warn);color:#fff;padding:3px 10px;border-radius:20px;font-size:0.72rem;font-weight:700;}
 </style>
 </head>
 <body>
-<div id="root"></div>
 
-<!-- ════════ 로그인 ════════ -->
+<!-- 로그인 -->
 <div id="loginScreen" class="login-wrap">
   <div class="login-card">
-    <div class="login-logo"></div>
+    <div class="login-logo"><svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M2 16h5l2.5-9 4 16 3.5-12 2.5 7 2-2h6.5" stroke="#fff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg></div>
     <div class="login-title">진원 위치 찾기 프로젝트</div>
     <div class="login-sub">지진 관측 데이터와 원의 방정식을 활용한 진원 위치 찾기 프로젝트</div>
-    <div class="form-group"><label>조</label>
-      <select id="loginGroup"><option value="">조를 선택하세요</option></select>
-    </div>
     <div class="form-group"><label>학급</label>
-      <select id="loginClass"><option value="">학급을 선택하세요</option>
+      <select id="loginClass"><option value="">선택하세요</option>
         <option>1반</option><option>2반</option><option>3반</option><option>4반</option>
         <option>5반</option><option>6반</option><option>7반</option><option>8반</option>
-      </select>
-    </div>
+      </select></div>
+    <div class="form-group"><label>조</label>
+      <select id="loginGroup"><option value="">선택하세요</option></select></div>
     <div class="form-group"><label>조원 이름 (2~3명)</label>
-      <div class="name-row">
-        <input type="text" id="name1" placeholder="이름 1" maxlength="10">
-        <input type="text" id="name2" placeholder="이름 2" maxlength="10">
-        <input type="text" id="name3" placeholder="이름 3 (선택)" maxlength="10">
-      </div>
-    </div>
-    <button class="btn btn-primary" style="width:100%;padding:12px;margin-top:6px" onclick="studentLogin()">탐구 시작하기</button>
+      <input type="text" id="loginName1" placeholder="조원 1 (필수)" maxlength="10" style="margin-bottom:6px">
+      <input type="text" id="loginName2" placeholder="조원 2 (필수)" maxlength="10" style="margin-bottom:6px">
+      <input type="text" id="loginName3" placeholder="조원 3 (선택)" maxlength="10"></div>
+    <button class="btn btn-primary" style="width:100%;padding:12px;margin-top:4px" onclick="studentLogin()">🔍 탐구 시작하기</button>
     <div class="divider"><span>교사</span></div>
     <div class="form-group" style="margin-bottom:0"><label>교사 인증 키</label>
       <input type="password" id="teacherKey" placeholder="교사 전용 키 입력"></div>
@@ -209,14 +244,13 @@ textarea:focus{outline:none;border-color:var(--accent);}
   </div>
 </div>
 
-<!-- ════════ 학생 ════════ -->
+<!-- 학생 -->
 <div id="studentScreen" class="hidden">
   <header>
-    <div class="logo-sm"></div>
+    <div class="logo-sm"><svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 16h5l2.5-9 4 16 3.5-12 2.5 7 2-2h6.5" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
     <div><h1>진원 위치 찾기 프로젝트</h1>
       <span class="badge">지진 관측 데이터와 원의 방정식을 활용한 진원 위치 찾기 프로젝트</span></div>
     <div class="user-info"><span id="headerUser"></span>
-      <span id="fbStatus" class="fb-status"></span>
       <button class="btn btn-ghost" style="padding:5px 12px;font-size:0.75rem" onclick="saveAndExit()">저장 후 나가기</button></div>
   </header>
   <nav class="steps-nav">
@@ -226,12 +260,13 @@ textarea:focus{outline:none;border-color:var(--accent);}
     <div class="step-tab" data-step="3"><span class="step-num">4</span>좌표계 설정</div>
     <div class="step-tab" data-step="4"><span class="step-num">5</span>원의 방정식</div>
     <div class="step-tab" data-step="5"><span class="step-num">6</span>공통현 방정식</div>
-    <div class="step-tab" data-step="6"><span class="step-num">7</span>교점·진앙</div>
+    <div class="step-tab" data-step="6"><span class="step-num">7</span>교점 선택·진앙</div>
     <div class="step-tab" data-step="7"><span class="step-num">8</span>진원 깊이</div>
   </nav>
+
   <main>
 
-  <!-- 1 지진 -->
+  <!-- 1 지진 선택 -->
   <div class="step-content active" id="step-0">
     <div class="panel">
       <div class="panel-label">탐구할 지진을 선택하세요</div>
@@ -242,38 +277,37 @@ textarea:focus{outline:none;border-color:var(--accent);}
       <button class="btn btn-primary" id="btn01" disabled onclick="goNext(1)">관측소 선택하기 →</button></div>
   </div>
 
-  <!-- 2 관측소 (지도에서 직접 선택) -->
+  <!-- 2 관측소 -->
   <div class="step-content" id="step-1">
     <div class="panel">
-      <div class="panel-label">지도에서 관측소 3개를 직접 클릭하여 선택하세요</div>
-      <div class="info-box">삼각측량에 사용할 관측소 3개를 지도에서 직접 클릭하세요. <strong>세 관측소가 고르게 퍼져 있을수록</strong> 더 정확하게 진원의 위치를 결정할 수 있습니다.</div>
-      <div id="lmapSel" class="lmap"></div>
-      <div class="sel-hint" id="selHint">아직 선택한 관측소가 없습니다. 지도 위의 파란 점을 클릭하세요. (0/3)</div>
+      <div class="panel-label">지도에서 관측소 3개를 선택하세요</div>
+      <div class="info-box">삼각측량에 사용할 관측소 3개를 선택하세요. <strong>세 관측소가 고르게 퍼져 있을수록</strong> 정확하게 결정됩니다.<br>
+        아래 <strong>지도 위의 관측소(◯)를 직접 클릭</strong>하여 선택하세요. 다시 클릭하면 선택이 취소됩니다.</div>
+      <div id="lmap0" class="lmap" style="height:460px"></div>
+      <div class="coord-bar" id="staInfo">지도에서 관측소를 클릭하면 정보가 표시됩니다. (최대 3개)</div>
     </div>
     <div class="flex-row"><button class="btn btn-ghost" onclick="go(0)">← 이전</button><span class="sp"></span>
       <button class="btn btn-primary" id="btn12" disabled onclick="goNext(2)">PS시 계산하기 →</button></div>
   </div>
 
-  <!-- 3 PS시 + 진원거리 직접계산 -->
+  <!-- 3 PS시 -->
   <div class="step-content" id="step-2">
     <div class="panel">
-      <div class="panel-label">P파·S파 도달 시각과 PS시</div>
-      <div class="info-box"><strong>PS시</strong> = S파 도달 시각 − P파 도달 시각. 진원이 멀수록 PS시가 길어집니다.</div>
-      <table id="arrTable"><thead><tr><th>관측소</th><th>P파 도달(초)</th><th>S파 도달(초)</th><th>PS시(초)</th></tr></thead><tbody></tbody></table>
-    </div>
-    <div class="panel">
-      <div class="panel-label">진원거리를 직접 계산하세요</div>
-      <div class="info-box">P파 속도는 <strong>6 km/s</strong>, S파 속도는 <strong>4 km/s</strong> 입니다. PS시를 이용하여 각 관측소의 진원거리를 직접 계산해 입력하세요.</div>
-      <button class="hint-btn" onclick="toggleHint('distHint')">💡 진원거리 공식이 떠오르지 않나요? 힌트 보기</button>
-      <div class="hint-reveal" id="distHint">
-        <strong>진원거리 공식 유도</strong><br>
-        진원거리를 D라 하면, P파 도달 시간 = D/6, S파 도달 시간 = D/4 입니다.<br>
-        PS시 = D/4 − D/6 = D(3−2)/12 = D/12<br>
-        따라서 <strong>D = PS시 × 12 (km)</strong><br>
-        (일반식: D = PS시 × V_P·V_S / (V_P − V_S))
+      <div class="panel-label">P파·S파 도달 시각으로 PS시와 진원거리를 직접 구하세요</div>
+      <div class="info-box"><strong>P파 속도는 6 km/s, S파 속도는 4 km/s 입니다.</strong> PS시를 이용하여 각 관측소의 진원거리를 직접 계산해 입력하세요.<br>
+        <strong>PS시</strong> = S파 도달 시각 − P파 도달 시각 입니다.</div>
+      <div class="tip-box">📌 <strong>가정</strong>: P파 속도 <strong>V_P = 6 km/s</strong>, S파 속도 <strong>V_S = 4 km/s</strong>.<br>
+        소수는 <strong>반올림하여 소수점 첫째 자리까지</strong> 나타내세요.</div>
+      <table id="arrTable"><thead><tr><th>관측소</th><th>P파 도달(초)</th><th>S파 도달(초)</th><th>PS시(초) 입력</th><th>진원거리(km) 입력</th></tr></thead><tbody></tbody></table>
+      <div style="margin-top:12px">
+        <button class="sup-btn" style="font-family:inherit" onclick="toggleDistHint()">💡 진원거리 구하는 식이 떠오르지 않아요 (힌트 보기)</button>
+        <div id="distHint" class="hidden" style="margin-top:10px;background:#fffbeb;border-left:3px solid var(--warn);border-radius:0 var(--r) var(--r) 0;padding:11px 14px;font-size:0.82rem;color:#78350f;line-height:1.8">
+          <strong>진원거리 공식</strong><br>
+          진원거리 D = PS시 × (V_P × V_S) / (V_P − V_S)<br>
+          = PS시 × (6 × 4) / (6 − 4) = PS시 × <strong style="color:var(--accent)">12</strong> (km)
+        </div>
       </div>
-      <div id="distInputArea"></div>
-      <div style="font-size:0.75rem;color:var(--muted);margin-top:8px">* 입력한 값은 다음 단계의 원의 반지름으로 사용됩니다.</div>
+      <div id="psCheckMsg" style="margin-top:12px;font-size:0.82rem"></div>
     </div>
     <div class="flex-row"><button class="btn btn-ghost" onclick="go(1)">← 이전</button><span class="sp"></span>
       <button class="btn btn-primary" id="btn23" onclick="goNext(3)">좌표계 설정하기 →</button></div>
@@ -297,7 +331,12 @@ textarea:focus{outline:none;border-color:var(--accent);}
     <div class="panel">
       <div class="panel-label">각 관측소를 중심으로 하는 원의 방정식을 직접 작성하세요</div>
       <div class="info-box">관측소 좌표 <strong>(a, b)</strong>와 진원거리 <strong>r</strong>로 원의 방정식 <strong>(x−a)² + (y−b)² = r²</strong> 을 작성하세요.</div>
-      <div class="tip-box">✏️ 제곱은 <strong>^2</strong> 로 입력하세요. 예) (x-120)^2 + (y-45)^2 = 131^2<br>소수는 반올림하여 소수점 둘째 자리까지 나타내세요. [^2 넣기] 버튼을 사용할 수 있습니다.</div>
+      <div class="tip-box">
+        ✏️ <strong>표기 규칙</strong><br>
+        · 제곱은 <strong>^2</strong> 로 입력하세요. 예) (x-120)^2<br>
+        · 소수는 <strong>반올림하여 소수점 둘째 자리까지</strong> 나타내세요.<br>
+        · [² 넣기] 버튼으로 ^2를 삽입할 수 있습니다.
+      </div>
       <div class="math-3col" id="eqWriteArea"></div>
       <button class="btn btn-primary" style="margin-top:16px" onclick="drawMyCircles()">📐 내 방정식대로 지도에 원 그리기</button>
       <div style="font-size:0.75rem;color:var(--muted);margin-top:6px">내가 작성한 방정식 그대로 원이 그려집니다. 세 원이 한 점 근처에서 만나는지 확인하세요.</div>
@@ -315,70 +354,99 @@ textarea:focus{outline:none;border-color:var(--accent);}
     </div>
     <div class="panel">
       <div class="panel-label">두 원의 방정식을 빼서 공통현(직선)의 방정식을 구하세요</div>
-      <div class="info-box">두 원의 방정식을 빼면 <strong>2차항이 소거</strong>되어 두 원의 교점을 지나는 직선(공통현)의 방정식이 됩니다.<br>계산 과정을 서술하고 결과를 <strong>ax + by = c</strong> 형태로 정리하세요.</div>
-      <div class="tip-box">💡 소수가 나오면 반올림하여 소수점 둘째 자리까지 나타내세요.</div>
+      <div class="info-box">두 원의 방정식을 빼면 <strong>2차항이 소거</strong>되어 공통현의 방정식이 됩니다.<br>
+        구한 결과를 <strong>ax + by = c</strong> 형태로 정리하여 입력하세요.</div>
+      <div class="tip-box">💡 소수가 나오면 <strong>반올림하여 소수점 둘째 자리까지</strong> 나타내세요.</div>
       <div id="chordWriteArea"></div>
     </div>
     <div class="flex-row"><button class="btn btn-ghost" onclick="go(4)">← 이전</button><span class="sp"></span>
       <button class="btn btn-primary" onclick="goNext(6)">교점 계산하기 →</button></div>
   </div>
 
-  <!-- 7 교점 연립 + 평균 + 답안 -->
+  <!-- 7 교점 -->
   <div class="step-content" id="step-6">
     <div class="panel">
       <div class="panel-label">내가 구한 공통현 방정식 (참고)</div>
       <div id="myChordDisplay"></div>
     </div>
     <div class="panel">
-      <div class="panel-label">두 공통현을 연립하여 교점을 구하세요</div>
-      <div class="info-box">위의 공통현 방정식들을 <strong>두 개씩 연립</strong>하여 교점 3개를 각각 구해 입력하세요. 세 교점을 입력하면 <strong>자동으로 평균 진앙이 지도에 표시</strong>됩니다. 소수는 반올림하여 소수점 둘째 자리까지 입력하세요.</div>
+      <div class="panel-label">공통현끼리 연립하여 교점 3개를 구하세요</div>
+      <div class="info-box">
+        위의 공통현 방정식들을 두 개씩 연립하여 교점 3개를 각각 구해 입력하세요.
+        세 교점을 입력하면 자동으로 평균 진앙이 지도에 표시됩니다.
+        소수는 반올림하여 소수점 둘째 자리까지 입력하세요.
+      </div>
+
+      <button class="sup-btn" style="font-family:inherit;margin-bottom:12px" onclick="toggleSolveHint()">💡 두 직선의 교점을 어떻게 구하나요? (힌트 보기)</button>
+      <div id="solveHint" class="hidden" style="margin-bottom:14px;background:#fffbeb;border-left:3px solid var(--warn);border-radius:0 var(--r) var(--r) 0;padding:11px 14px;font-size:0.82rem;color:#78350f;line-height:1.9">
+        <strong>두 직선 ax + by = c 의 연립</strong><br>
+        ① 두 식 중 한 문자(예: y)의 계수를 같게 만든다.<br>
+        ② 두 식을 변끼리 빼서 한 문자를 소거하고 나머지 문자를 구한다.<br>
+        ③ 구한 값을 한 식에 대입하여 남은 문자를 구한다. → 교점 (x, y)
+      </div>
+
       <div class="intersect-wrap" id="intersectArea"></div>
     </div>
+
     <div class="panel" id="epicenterResultPanel" style="display:none">
       <div class="panel-label">진앙 결정 — 실제 진앙 위치는 여기서 처음 공개됩니다! ⭐</div>
-      <div class="tip-box">세 교점의 평균이 여러분이 구한 진앙이에요. 아래 지도에서 실제 진앙(⭐)과 비교해보세요.</div>
+      <div class="tip-box">교점 3개를 모두 입력하면 평균(=진앙)이 자동으로 지도에 표시됩니다. 실제 진앙(⭐)과 비교해보세요.</div>
       <div class="result-box" id="resultBox" style="margin-bottom:14px"></div>
-      <div id="lmap3" class="lmap"></div>
+      <div id="lmap4" class="lmap"></div>
       <div class="legend" style="margin-top:10px">
         <div class="leg-item"><span style="font-size:1.1rem">⭐</span>실제 진앙</div>
-        <div class="leg-item"><div class="leg-dot" style="background:#7c3aed"></div>내가 구한 교점들</div>
-        <div class="leg-item"><div class="leg-dot" style="background:#dc2626"></div>평균 진앙(계산값)</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#7c3aed"></div>내가 구한 교점 3개</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#dc2626"></div>평균 진앙(내 계산)</div>
+        <div class="leg-item" style="opacity:0.6;font-size:0.7rem">오차 삼각형이 작을수록 정확해요</div>
       </div>
     </div>
-    <div class="panel" id="essayPanel" style="display:none">
+
+    <div class="panel" id="reflectPanel" style="display:none">
       <div class="panel-label">생각해보기</div>
-      <div class="info-box" style="margin-bottom:10px"><strong>오차가 발생한 이유는 무엇일까요?</strong> 생각한 이유를 자유롭게 작성해보세요.</div>
-      <textarea id="essayInput" class="answer-textarea" placeholder="예) 세 원이 정확히 한 점에서 만나지 않기 때문에..." oninput="S.essay=this.value;saveProgress()"></textarea>
+      <div class="info-box" style="font-weight:600">오차가 발생한 이유는 무엇일까요? 생각한 이유를 자유롭게 작성해보세요.</div>
+      <textarea id="errorReason" rows="4" placeholder="예) 진원거리를 반올림하면서 생긴 오차, 세 원이 정확히 한 점에서 만나지 않아서 ..."
+        oninput="S.errorReason=this.value;saveProgress()" style="font-family:'Segoe UI',system-ui,sans-serif"></textarea>
     </div>
+
     <div class="flex-row"><button class="btn btn-ghost" onclick="go(5)">← 이전</button><span class="sp"></span>
       <button class="btn btn-primary" id="btn78" disabled onclick="goNext(7)">진원 깊이 알아보기 →</button></div>
   </div>
 
-  <!-- 8 반구 시뮬레이션 -->
+  <!-- 8 진원 깊이 -->
   <div class="step-content" id="step-7">
     <div class="panel">
-      <div class="panel-label">진원의 깊이 — 반구 모형으로 진원 위치 특정하기</div>
+      <div class="panel-label">진원의 깊이 — 반구를 이용해 진원을 직접 작도하기</div>
       <div class="info-box">
-        한 관측소를 기준으로 <strong>진원거리(d)를 반지름으로 하는 반구</strong>를 세우고,
-        진앙을 지나는 <strong>현(chord)</strong>을 그린 뒤, 그 현을 지름으로 하는 원을 이용해 <strong>진원의 위치</strong>를 직접 특정해봅니다.<br>
-        진앙 위치는 <strong>실제 진앙 데이터</strong>를 사용합니다.
+        <strong>관측소</strong>를 중심으로 <strong>진원거리</strong>를 반지름으로 하는 <strong>반구</strong>를 그립니다. 진원은 반드시 이 반구면 위에 있습니다.<br>
+        <strong>진앙</strong>에서, 관측소와 진앙을 잇는 선에 <strong>수직인 수평 방향(지표면 위)</strong>으로 직선(현)을 그어 반구와 만나는 두 점을 찾습니다.
+        이 두 점을 지름으로 하는 <strong>수직원</strong>(지표면에 수직으로 선 원)을 세우면, 그 <strong>가장 아래 점이 진원</strong>입니다.<br>
+        진앙에서 진원까지의 <strong>깊이</strong>는, 위에서 그은 <strong>수평 현의 반 길이</strong>와 같습니다. (단순히 진앙 아래로 수직선을 내려 구하는 것이 아닙니다.)<br>
+        <span style="font-size:0.78rem;color:var(--muted)">* 진앙은 실제 진앙 위치 데이터를 사용하므로 오차로 인한 오류 없이 작도됩니다.</span>
       </div>
-      <div class="flex-row" style="margin-bottom:14px">
-        <label style="font-size:0.8rem;color:var(--muted);font-weight:600">기준 관측소:</label>
-        <select id="simStation" onchange="resetSim()" style="padding:7px 12px;background:#fff;border:1.5px solid var(--border);border-radius:6px;font-size:0.82rem"></select>
+      <div class="depth-controls" style="display:flex;gap:14px;align-items:center;margin:14px 0;flex-wrap:wrap;">
+        <label style="font-size:0.8rem;color:var(--muted);font-weight:600">단면을 볼 관측소:</label>
+        <select id="depthStation" onchange="resetConstruction()" style="padding:7px 12px;background:#fff;border:1.5px solid var(--border);border-radius:6px;color:var(--text);font-size:0.82rem;"></select>
       </div>
-      <div class="sim-steps" id="simSteps">
-        <button class="sim-step-btn current" id="simBtn0" onclick="simStep(0)">① 반구 세우기</button>
-        <button class="sim-step-btn" id="simBtn1" onclick="simStep(1)" disabled>② 진앙 표시</button>
-        <button class="sim-step-btn" id="simBtn2" onclick="simStep(2)" disabled>③ 현 그리기</button>
-        <button class="sim-step-btn" id="simBtn3" onclick="simStep(3)" disabled>④ 현을 지름으로 하는 원</button>
-        <button class="sim-step-btn" id="simBtn4" onclick="simStep(4)" disabled>⑤ 진원 특정</button>
+
+      <!-- 단계별 작도 버튼 -->
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px" id="constructBtns">
+        <button class="orig-btn" id="cbtn1" onclick="constructStep(1)">① 진원거리로 반구 그리기</button>
+        <button class="orig-btn" id="cbtn2" onclick="constructStep(2)">② 관측소–진앙 선 긋기</button>
+        <button class="orig-btn" id="cbtn3" onclick="constructStep(3)">③ 수평 직교 현 · 수직원 세우기</button>
+        <button class="orig-btn" id="cbtn4" onclick="constructStep(4)">④ 진원 · 진원 깊이 구하기</button>
+        <button class="orig-btn" onclick="resetConstruction()" style="margin-left:auto">↺ 초기화</button>
       </div>
-      <div class="threed-wrap" id="threedWrap"><canvas id="simCanvas"></canvas></div>
-      <div id="simExplain" class="info-box" style="margin-top:14px;margin-bottom:0"></div>
-      <div class="panel" style="margin-top:14px;margin-bottom:0">
-        <div class="panel-label">깊이 계산 결과</div>
-        <div id="depthResult"></div>
+      <div id="constructGuide" class="tip-box">위 버튼을 <strong>①②③④ 순서대로</strong> 눌러 진원과 깊이를 직접 작도해보세요. 3D 화면을 <strong>마우스로 드래그하면 회전</strong>, <strong>스크롤하면 확대/축소</strong>됩니다.</div>
+
+      <div class="threed-wrap" id="threedWrap">
+        <canvas id="depthCanvas"></canvas>
+        <div class="threed-overlay" id="threedOverlay"></div>
+      </div>
+      <div class="depth-table-wrap">
+        <div class="panel" style="margin-top:14px">
+          <div class="panel-label">관측소별 깊이 계산 결과</div>
+          <div id="depthResult"></div>
+        </div>
       </div>
     </div>
     <div class="flex-row"><button class="btn btn-ghost" onclick="go(6)">← 이전</button><span class="sp"></span>
@@ -387,13 +455,12 @@ textarea:focus{outline:none;border-color:var(--accent);}
   </main>
 </div>
 
-<!-- ════════ 교사 ════════ -->
+<!-- 교사 -->
 <div id="teacherScreen" class="hidden">
   <header>
-    <div class="logo-sm"></div>
+    <div class="logo-sm"><svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 16h5l2.5-9 4 16 3.5-12 2.5 7 2-2h6.5" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
     <div><h1>진원 위치 찾기 프로젝트</h1><span class="badge">교사 대시보드</span></div>
     <div class="user-info"><span style="color:var(--warn);font-weight:700">교사 모드</span>
-      <span id="fbStatusT" class="fb-status"></span>
       <button class="btn btn-ghost" style="padding:5px 12px;font-size:0.75rem" onclick="exitTeacher()">나가기</button></div>
   </header>
   <div class="teacher-wrap">
@@ -411,81 +478,84 @@ textarea:focus{outline:none;border-color:var(--accent);}
 </div>
 
 <script>
-// ═══════════ 데이터 ═══════════
+// ═══════════════ 데이터 ═══════════════
 const TEACHER_KEY='jamshil2025';
 const EVENTS=[
  {id:"us10006jbi",name:"2016 경주 지진",lat:35.77,lon:129.19,depth:15,mag:5.8,desc:"한반도 계기 관측 이래 최대 규모",
-  arr:{EMSN:{name:"문경",lat:36.62,lon:128.19,pt:21.8,st:32.7,ps:10.9,d:131.0},
+  arr:{EMSN:{name:"문경",lat:36.62,lon:128.19,pt:21.8,st:32.8,ps:11.0,d:131.0},
        JSSB:{name:"정선",lat:37.37,lon:128.66,pt:30.7,st:46.1,ps:15.4,d:184.4},
        YGNB:{name:"양구",lat:38.12,lon:127.99,pt:47.0,st:70.5,ps:23.5,d:282.1},
        MODB:{name:"무주",lat:35.98,lon:127.66,pt:23.4,st:35.1,ps:11.7,d:140.4},
-       KSDB:{name:"거창",lat:35.68,lon:127.91,pt:19.5,st:29.2,ps:9.7,d:116.7},
-       CHNB:{name:"천안",lat:36.80,lon:127.13,pt:36.2,st:54.4,ps:18.1,d:217.4},
+       KSDB:{name:"거창",lat:35.68,lon:127.91,pt:19.4,st:29.2,ps:9.8,d:116.7},
+       CHNB:{name:"천안",lat:36.80,lon:127.13,pt:36.2,st:54.4,ps:18.2,d:217.4},
        SOKB:{name:"속초",lat:38.20,lon:128.60,pt:45.9,st:68.8,ps:22.9,d:275.2},
        TOJB:{name:"통영",lat:34.85,lon:128.43,pt:20.7,st:31.0,ps:10.3,d:124.1}}},
  {id:"us2000bmaz",name:"2017 포항 지진",lat:36.11,lon:129.36,depth:9,mag:5.4,desc:"수능 연기, 최대여진 M4.6",
   arr:{EMSN:{name:"문경",lat:36.62,lon:128.19,pt:19.9,st:29.8,ps:9.9,d:119.3},
-       JSSB:{name:"정선",lat:37.37,lon:128.66,pt:25.6,st:38.3,ps:12.8,d:153.4},
-       YGNB:{name:"양구",lat:38.12,lon:127.99,pt:42.3,st:63.5,ps:21.2,d:254.1},
+       JSSB:{name:"정선",lat:37.37,lon:128.66,pt:25.6,st:38.4,ps:12.8,d:153.4},
+       YGNB:{name:"양구",lat:38.12,lon:127.99,pt:42.4,st:63.5,ps:21.1,d:254.1},
        MODB:{name:"무주",lat:35.98,lon:127.66,pt:25.6,st:38.4,ps:12.8,d:153.5},
        KSDB:{name:"거창",lat:35.68,lon:127.91,pt:23.2,st:34.8,ps:11.6,d:139.1},
        CHNB:{name:"천안",lat:36.80,lon:127.13,pt:35.6,st:53.4,ps:17.8,d:213.5},
        SOKB:{name:"속초",lat:38.20,lon:128.60,pt:40.3,st:60.4,ps:20.1,d:241.7},
-       TOJB:{name:"통영",lat:34.85,lon:128.43,pt:27.2,st:40.9,ps:13.6,d:163.4}}},
+       TOJB:{name:"통영",lat:34.85,lon:128.43,pt:27.2,st:40.9,ps:13.7,d:163.4}}},
  {id:"us7000e1qk",name:"2021 서해 지진",lat:37.50,lon:125.50,depth:20,mag:4.0,desc:"서해 해역, 수도권·충청 감진",
   arr:{YGNB:{name:"양구",lat:38.12,lon:127.99,pt:38.3,st:57.5,ps:19.2,d:229.8},
        JSSB:{name:"정선",lat:37.37,lon:128.66,pt:46.6,st:69.9,ps:23.3,d:279.6},
-       EMSN:{name:"문경",lat:36.62,lon:128.19,pt:43.0,st:64.6,ps:21.5,d:258.3},
-       MODB:{name:"무주",lat:35.98,lon:127.66,pt:42.7,st:64.1,ps:21.4,d:256.5},
-       CHNB:{name:"천안",lat:36.80,lon:127.13,pt:27.5,st:41.3,ps:13.8,d:165.0},
+       EMSN:{name:"문경",lat:36.62,lon:128.19,pt:43.1,st:64.6,ps:21.5,d:258.3},
+       MODB:{name:"무주",lat:35.98,lon:127.66,pt:42.8,st:64.1,ps:21.3,d:256.5},
+       CHNB:{name:"천안",lat:36.80,lon:127.13,pt:27.5,st:41.2,ps:13.7,d:165.0},
        SOKB:{name:"속초",lat:38.20,lon:128.60,pt:47.2,st:70.8,ps:23.6,d:283.3}}}
 ];
 const SC=['#2563eb','#e05c3a','#16a34a'];
+const SCL=['#3b82f6','#f87171','#4ade80'];
 
-// ═══════════ 상태 ═══════════
-let S={group:null,cls:null,names:[],ev:null,stas:[],origin:null,
-  studentDists:['','',''],eqTexts:['','',''],chordTexts:['','',''],
-  intersectInputs:[[null,null],[null,null],[null,null]],
-  calcEpicenter:null,essay:'',maxStep:0};
-let maps={};let layers={m1:[],m2:[],m3:[],sel:[]};
+// ═══════════════ 상태 ═══════════════
+let S={user:null,cls:null,grp:null,members:[],ev:null,stas:[],origin:null,
+  psInputs:['','',''],distInputs:['','',''],
+  eqTexts:['','',''],chordTexts:['','',''],
+  intersectInputs:[['',''],['',''],['','']],
+  calcEpicenter:null,errorReason:'',maxStep:0};
+let maps={};let layers={m1:[],m2:[],m3:[]};
 
-// ═══════════ 로그인 ═══════════
-(function initGroups(){
+// Three.js 전역
+let threeRenderer=null,threeScene=null,threeCamera=null,threeAnimId=null;
+
+// 조 드롭다운 채우기 (1조~15조)
+(function fillGroups(){
   const sel=document.getElementById('loginGroup');
+  if(!sel)return;
   for(let i=1;i<=15;i++){const o=document.createElement('option');o.textContent=i+'조';sel.appendChild(o);}
 })();
+
+// ═══════════════ 로그인 ═══════════════
 function studentLogin(){
-  const group=document.getElementById('loginGroup').value;
   const cls=document.getElementById('loginClass').value;
-  const names=[document.getElementById('name1').value.trim(),
-               document.getElementById('name2').value.trim(),
-               document.getElementById('name3').value.trim()].filter(n=>n);
-  if(!group){showErr('조를 선택하세요.');return;}
+  const grp=document.getElementById('loginGroup').value;
+  const n1=document.getElementById('loginName1').value.trim();
+  const n2=document.getElementById('loginName2').value.trim();
+  const n3=document.getElementById('loginName3').value.trim();
+  const members=[n1,n2,n3].filter(Boolean);
   if(!cls){showErr('학급을 선택하세요.');return;}
-  if(names.length<2){showErr('조원 이름을 2명 이상 입력하세요.');return;}
-  S.group=group;S.cls=cls;S.names=names;
+  if(!grp){showErr('조를 선택하세요.');return;}
+  if(members.length<2){showErr('조원 이름을 2명 이상 입력하세요.');return;}
+  S.cls=cls;S.grp=grp;S.members=members;S.user=members.join(', ');
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('studentScreen').classList.remove('hidden');
-  document.getElementById('headerUser').textContent=`${cls} ${group} · ${names.join(', ')}`;
-  const fbEl=document.getElementById('fbStatus');
-  fbEl.className='fb-status '+(window._fbReady?'fb-on':'fb-off');
-  fbEl.textContent=window._fbReady?'● 저장 연결됨':'● 로컬 저장';
+  document.getElementById('headerUser').textContent=`${cls} ${grp} · ${S.user}`;
   renderEqGrid();
 }
 function teacherLogin(){
   if(document.getElementById('teacherKey').value!==TEACHER_KEY){showErr('인증 키가 올바르지 않습니다.');return;}
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('teacherScreen').classList.remove('hidden');
-  const fbEl=document.getElementById('fbStatusT');
-  fbEl.className='fb-status '+(window._fbReady?'fb-on':'fb-off');
-  fbEl.textContent=window._fbReady?'● Firebase 연결됨':'● 로컬 모드';
   loadSubmissions();
 }
 function showErr(m){document.getElementById('loginErr').textContent=m;}
 function exitTeacher(){document.getElementById('teacherScreen').classList.add('hidden');document.getElementById('loginScreen').classList.remove('hidden');}
 function saveAndExit(){saveProgress();document.getElementById('studentScreen').classList.add('hidden');document.getElementById('loginScreen').classList.remove('hidden');}
 
-// ═══════════ 좌표 유틸 ═══════════
+// ═══════════════ 좌표 ═══════════════
 function latlonToKm(la1,lo1,la2,lo2){
   return{dx:Math.round((lo2-lo1)*111*Math.cos((la1+la2)/2*Math.PI/180)),
          dy:Math.round((la2-la1)*111)};
@@ -498,19 +568,19 @@ function getOriginLL(){
 function getXY(code){const{lat,lon}=getOriginLL();return latlonToKm(lat,lon,S.ev.arr[code].lat,S.ev.arr[code].lon);}
 function kmToLL(x,y){const{lat:ol,lon:oo}=getOriginLL();return{lat:ol+y/111,lon:oo+x/(111*Math.cos(ol*Math.PI/180))};}
 
-// ═══════════ 네비게이션 ═══════════
+// ═══════════════ 네비게이션 ═══════════════
 function go(n){
   document.querySelectorAll('.step-content').forEach(el=>el.classList.remove('active'));
   document.getElementById(`step-${n}`).classList.add('active');
   document.querySelectorAll('.step-tab').forEach((t,i)=>t.classList.toggle('active',i===n));
   if(n>S.maxStep)S.maxStep=n;
-  if(n===1){setTimeout(()=>initSelMap(),120);}
-  if(n===2){renderArrTable();renderDistInputs();}
-  if(n===3){renderOriginBtns();setTimeout(()=>initMap('lmap1',false),120);}
-  if(n===4){renderEqWrite();setTimeout(()=>initMap('lmap2',false),120);}
+  if(n===1&&S.ev){renderStaInfo();setTimeout(()=>initStaMap(),120);}
+  if(n===2)renderArrTable();
+  if(n===3){renderOriginBtns();setTimeout(()=>initMap('lmap1'),120);}
+  if(n===4){renderEqWrite();setTimeout(()=>initMap('lmap2'),120);}
   if(n===5){renderMyEqs();renderChordWrite();}
-  if(n===6){initStep6();}
-  if(n===7){renderSimStep();}
+  if(n===6){initStep7();}
+  if(n===7)renderDepthStep();
   saveProgress();
   window.scrollTo({top:0,behavior:'smooth'});
 }
@@ -524,7 +594,7 @@ document.querySelectorAll('.step-tab').forEach((tab,i)=>{
   });
 });
 
-// ═══════════ STEP 1 지진 ═══════════
+// ═══════════════ STEP 1 ═══════════════
 function renderEqGrid(){
   document.getElementById('eqGrid').innerHTML=EVENTS.map(ev=>`
     <div class="eq-card" onclick="selEv('${ev.id}')" id="ev-${ev.id}">
@@ -536,87 +606,100 @@ function renderEqGrid(){
 }
 function selEv(id){
   S.ev=EVENTS.find(e=>e.id===id);S.stas=[];S.origin=null;
+  S.psInputs=['','',''];S.distInputs=['','',''];
+  S.eqTexts=['','',''];S.chordTexts=['','',''];
+  S.intersectInputs=[['',''],['',''],['','']];
+  S.calcEpicenter=null;S.errorReason='';
   document.querySelectorAll('.eq-card').forEach(c=>c.classList.remove('selected'));
   document.getElementById(`ev-${id}`).classList.add('selected');
   document.getElementById('btn01').disabled=false;
 }
 
-// ═══════════ STEP 2 지도에서 관측소 선택 ═══════════
-function initSelMap(){
-  if(maps['lmapSel']){maps['lmapSel'].remove();delete maps['lmapSel'];}
+// ═══════════════ STEP 2 — 지도에서 관측소 선택 ═══════════════
+let staMap=null, staMarkers={};
+function initStaMap(){
+  if(staMap){staMap.remove();staMap=null;}
+  staMarkers={};
   const ev=S.ev;
-  const m=L.map('lmapSel',{zoomSnap:0.25}).setView([ev.lat,ev.lon],7);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:13,minZoom:5,attribution:'© OpenStreetMap'}).addTo(m);
-  maps['lmapSel']=m;
-  layers.sel=[];
-  // 모든 관측소를 클릭 가능한 마커로
+  const m=L.map('lmap0',{zoomSnap:0.25}).setView([ev.lat,ev.lon],7);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    maxZoom:13,minZoom:5,attribution:'© OpenStreetMap'}).addTo(m);
+  staMap=m;
   Object.entries(ev.arr).forEach(([code,st])=>{
-    const selIdx=S.stas.indexOf(code);
-    const mk=L.circleMarker([st.lat,st.lon],{
-      radius:10,fillColor:selIdx>=0?SC[selIdx]:'#3b82f6',
-      fillOpacity:selIdx>=0?1:0.55,color:'#fff',weight:2
-    }).addTo(m);
-    mk.on('click',()=>toggleStaMap(code));
+    const mk=L.circleMarker([st.lat,st.lon],{radius:10,fillColor:'#94a3b8',fillOpacity:0.9,color:'#fff',weight:2});
+    mk.addTo(m);
     const lbl=L.marker([st.lat,st.lon],{icon:L.divIcon({className:'sta-label',
-      html:`${selIdx>=0?`<span style="color:${SC[selIdx]}">${String.fromCharCode(65+selIdx)}. </span>`:''}${st.name}`,
-      iconAnchor:[-10,8]})}).addTo(m);
-    layers.sel.push(mk,lbl);
+      html:`<span style="color:#1a2332;font-weight:700">${st.name}</span>`,iconAnchor:[-10,8]})}).addTo(m);
+    mk.on('click',()=>toggleSta(code));
+    lbl.on('click',()=>toggleSta(code));
+    staMarkers[code]={mk,lbl};
   });
-  const pts=Object.values(ev.arr).map(st=>[st.lat,st.lon]);
-  m.fitBounds(L.latLngBounds(pts).pad(0.3));
-  setTimeout(()=>m.invalidateSize(),100);
+  const pts=Object.values(ev.arr).map(s=>[s.lat,s.lon]);
+  m.fitBounds(L.latLngBounds(pts).pad(0.25));
+  setTimeout(()=>m.invalidateSize(),200);
+  updateStaMapStyle();
 }
-function toggleStaMap(code){
+function toggleSta(code){
   const i=S.stas.indexOf(code);
   if(i>=0)S.stas.splice(i,1);
   else{if(S.stas.length>=3)return;S.stas.push(code);}
-  initSelMap();
-  updateSelHint();
+  updateStaMapStyle();
+  renderStaInfo();
   document.getElementById('btn12').disabled=S.stas.length<3;
+  saveProgress();
 }
-function updateSelHint(){
-  const ev=S.ev;const hint=document.getElementById('selHint');
-  if(!S.stas.length){hint.textContent='아직 선택한 관측소가 없습니다. 지도 위의 파란 점을 클릭하세요. (0/3)';return;}
-  hint.innerHTML=`선택됨 (${S.stas.length}/3): `+S.stas.map((c,i)=>`<span style="color:${SC[i]};font-weight:700">${String.fromCharCode(65+i)}. ${ev.arr[c].name}</span>`).join('  ·  ')+(S.stas.length<3?'  — 더 선택하세요.':'  ✅ 완료!');
+function updateStaMapStyle(){
+  if(!S.ev)return;
+  Object.keys(S.ev.arr).forEach(code=>{
+    const obj=staMarkers[code];if(!obj)return;
+    const i=S.stas.indexOf(code);const st=S.ev.arr[code];
+    if(i>=0){
+      obj.mk.setStyle({fillColor:SC[i],radius:13,weight:3});
+      obj.lbl.setIcon(L.divIcon({className:'sta-label',
+        html:`<span style="color:${SC[i]};font-weight:700">${String.fromCharCode(65+i)}. ${st.name}</span>`,iconAnchor:[-10,8]}));
+    } else {
+      obj.mk.setStyle({fillColor:'#94a3b8',radius:10,weight:2});
+      obj.lbl.setIcon(L.divIcon({className:'sta-label',
+        html:`<span style="color:#1a2332;font-weight:700">${st.name}</span>`,iconAnchor:[-10,8]}));
+    }
+  });
+}
+function renderStaInfo(){
+  document.getElementById('staInfo').innerHTML=S.stas.length?
+    S.stas.map((c,i)=>`<span style="color:${SC[i]}">${String.fromCharCode(65+i)}. ${S.ev.arr[c].name}(${c})</span>`).join('  ·  ')
+    +`  <span style="color:var(--dim)">(${S.stas.length}/3)</span>`
+    :'지도에서 관측소를 클릭하면 정보가 표시됩니다. (최대 3개)';
 }
 
-// ═══════════ STEP 3 PS시 + 진원거리 직접 ═══════════
+// ═══════════════ STEP 3 — PS시·진원거리 직접 계산 ═══════════════
 function renderArrTable(){
   document.querySelector('#arrTable tbody').innerHTML=S.stas.map((c,i)=>{
     const a=S.ev.arr[c];
     return`<tr><td><span class="sdot" style="background:${SC[i]}"></span>${a.name} (${c})</td>
-      <td class="pv">${a.pt}s</td><td class="sv">${a.st}s</td><td class="psv">${a.ps}s</td></tr>`;
+      <td class="pv">${a.pt}s</td><td class="sv">${a.st}s</td>
+      <td><input type="number" step="0.1" id="ps-${i}" value="${S.psInputs[i]}" placeholder="?"
+        oninput="S.psInputs[${i}]=this.value;checkPSDist()" style="width:90px;padding:6px 8px;border:1.5px solid var(--border);border-radius:6px;font-family:var(--mono)"></td>
+      <td><input type="number" step="0.1" id="dist-${i}" value="${S.distInputs[i]}" placeholder="?"
+        oninput="S.distInputs[${i}]=this.value;checkPSDist()" style="width:100px;padding:6px 8px;border:1.5px solid var(--border);border-radius:6px;font-family:var(--mono)"></td></tr>`;
   }).join('');
+  checkPSDist();
 }
-function renderDistInputs(){
-  document.getElementById('distInputArea').innerHTML=S.stas.map((c,i)=>{
-    const a=S.ev.arr[c];
-    return`<div class="xy-row" style="margin-bottom:10px">
-      <span style="width:120px;flex-shrink:0;font-size:0.85rem"><span class="sdot" style="background:${SC[i]}"></span>${a.name} (PS시 ${a.ps}s)</span>
-      <input type="number" id="dist-${i}" value="${S.studentDists[i]||''}" placeholder="진원거리 입력" step="0.1"
-        oninput="S.studentDists[${i}]=this.value;saveProgress()" style="max-width:200px">
-      <span style="font-size:0.8rem;color:var(--muted)">km</span>
-    </div>`;
-  }).join('');
+function toggleDistHint(){document.getElementById('distHint').classList.toggle('hidden');}
+function checkPSDist(){
+  // 학생에게 정오를 표시하지 않음 (입력값은 그대로 저장되어 교사 화면에서 확인)
+  const msg=document.getElementById('psCheckMsg');
+  if(msg)msg.innerHTML='';
 }
-function toggleHint(id){document.getElementById(id).classList.toggle('show');}
 
-// ═══════════ 진원거리: 학생 입력 우선, 없으면 실제값 ═══════════
-function getDist(i){
-  const v=parseFloat(S.studentDists[i]);
-  if(!isNaN(v)&&v>0)return v;
-  return S.ev.arr[S.stas[i]].d;
-}
-</script>
-
-<script>
-// ═══════════ Leaflet 지도 공통 ═══════════
-function initMap(divId,showEpic=true){
+// ═══════════════ Leaflet 지도 공통 ═══════════════
+function initMap(divId,showEpicenter=true){
   if(maps[divId]){maps[divId].remove();delete maps[divId];}
   const ev=S.ev;
   const m=L.map(divId,{zoomSnap:0.25}).setView([ev.lat,ev.lon],7);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:13,minZoom:5,attribution:'© OpenStreetMap'}).addTo(m);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    maxZoom:13,minZoom:5,attribution:'© OpenStreetMap'}).addTo(m);
   maps[divId]=m;
+
   if(S.origin){
     const{lat:oLat,lon:oLon}=getOriginLL();
     for(let d=-700;d<=700;d+=100){
@@ -633,6 +716,7 @@ function initMap(divId,showEpic=true){
     }
     L.marker([oLat,oLon],{icon:L.divIcon({className:'coord-label',html:'<b>O(0,0)</b>',iconAnchor:[-6,-4]})}).addTo(m);
   }
+
   S.stas.forEach((c,i)=>{
     const st=S.ev.arr[c];
     L.circleMarker([st.lat,st.lon],{radius:8,fillColor:SC[i],fillOpacity:1,color:'#fff',weight:2}).addTo(m);
@@ -640,28 +724,34 @@ function initMap(divId,showEpic=true){
     if(S.origin){const{dx,dy}=getXY(c);lbl+=` <span style="color:#64748b;font-size:10px;font-family:monospace">(${dx},${dy})</span>`;}
     L.marker([st.lat,st.lon],{icon:L.divIcon({className:'sta-label',html:lbl,iconAnchor:[-10,8]})}).addTo(m);
   });
-  if(showEpic&&(divId==='lmap3')){
-    L.marker([ev.lat,ev.lon],{icon:L.divIcon({className:'',html:'<div style="font-size:22px;filter:drop-shadow(0 1px 3px rgba(0,0,0,0.4))">⭐</div>',iconAnchor:[11,11]})}).addTo(m);
-    L.marker([ev.lat,ev.lon],{icon:L.divIcon({className:'sta-label',html:'<span style="color:#d97706;font-weight:700">실제 진앙</span>',iconAnchor:[-12,-4]})}).addTo(m);
+
+  // 실제 진앙: 7단계(step-6)에서만 표시
+  if(showEpicenter&&divId==='lmap3'){
+    L.marker([ev.lat,ev.lon],{icon:L.divIcon({className:'',
+      html:'<div style="font-size:22px;filter:drop-shadow(0 1px 3px rgba(0,0,0,0.4))">⭐</div>',iconAnchor:[11,11]})}).addTo(m);
+    L.marker([ev.lat,ev.lon],{icon:L.divIcon({className:'sta-label',
+      html:'<span style="color:#d97706;font-weight:700">실제 진앙</span>',iconAnchor:[-12,-4]})}).addTo(m);
   }
+
   const pts=S.stas.map(c=>[S.ev.arr[c].lat,S.ev.arr[c].lon]);
   if(divId==='lmap3')pts.push([ev.lat,ev.lon]);
   m.fitBounds(L.latLngBounds(pts).pad(0.3));
-  setTimeout(()=>m.invalidateSize(),100);
   return m;
 }
 
-// ═══════════ STEP 4 좌표계 ═══════════
+// ═══════════════ STEP 4 ═══════════════
 function renderOriginBtns(){
   let html=S.stas.map((c,i)=>{
     const on=S.origin===c?'on':'';
-    return`<button class="orig-btn ${on}" onclick="setOrigin('${c}')" style="${on?`background:${SC[i]};border-color:${SC[i]};color:#fff`:''}">${S.ev.arr[c].name} 관측소를 원점으로</button>`;
+    return`<button class="orig-btn ${on}" onclick="setOrigin('${c}')"
+      style="${on?`background:${SC[i]};border-color:${SC[i]};color:#fff`:''}">${S.ev.arr[c].name} 관측소를 원점으로</button>`;
   }).join('');
   html+=`<button class="orig-btn ${S.origin==='centroid'?'on':''}" onclick="setOrigin('centroid')">세 관측소의 무게중심을 원점으로</button>`;
   document.getElementById('originBtns').innerHTML=html;
 }
 function setOrigin(code){
-  S.origin=code;renderOriginBtns();initMap('lmap1',false);
+  S.origin=code;renderOriginBtns();
+  initMap('lmap1',false);
   document.getElementById('coordBar').innerHTML=S.stas.map((c,i)=>{
     const{dx,dy}=getXY(c);
     return`<span style="color:${SC[i]}">${S.ev.arr[c].name}: (${dx}, ${dy})</span>`;
@@ -669,30 +759,45 @@ function setOrigin(code){
   document.getElementById('btn34').disabled=false;
 }
 
-// ═══════════ STEP 5 원의 방정식 ═══════════
+// ═══════════════ STEP 5 ═══════════════
 function renderEqWrite(){
   document.getElementById('eqWriteArea').innerHTML=S.stas.map((c,i)=>{
-    const st=S.ev.arr[c];const{dx,dy}=getXY(c);const r=getDist(i);
-    return`<div class="math-card">
-      <h4><span class="sdot" style="background:${SC[i]};width:10px;height:10px;border-radius:50%;display:inline-block"></span>관측소 ${String.fromCharCode(65+i)} — ${st.name}</h4>
-      <div class="math-prompt">중심 좌표: <span style="color:${SC[i]};font-weight:700">(${dx}, ${dy})</span> km<br>진원거리(내가 구한값): <span style="color:var(--accent3);font-weight:700">${r.toFixed(1)}</span> km</div>
-      <textarea id="eq-${i}" rows="2" placeholder="예) (x-120)^2 + (y-45)^2 = 131^2" oninput="S.eqTexts[${i}]=this.value">${S.eqTexts[i]}</textarea>
+    const st=S.ev.arr[c];const{dx,dy}=getXY(c);
+    return`
+    <div class="math-card">
+      <h4><span class="sdot" style="background:${SC[i]};width:10px;height:10px;border-radius:50%;display:inline-block"></span>
+        관측소 ${String.fromCharCode(65+i)} — ${st.name}</h4>
+      <div class="math-prompt">중심 좌표: <span style="color:${SC[i]};font-weight:700">(${dx}, ${dy})</span> km<br>
+        진원거리: <span style="color:var(--accent3);font-weight:700">${st.d}</span> km</div>
+      <textarea id="eq-${i}" rows="2" placeholder="예) (x-120)^2 + (y+45)^2 = 131^2"
+        oninput="S.eqTexts[${i}]=this.value;checkDash(${i})">${S.eqTexts[i]}</textarea>
       <button class="sup-btn" onclick="insertSup(${i})">^2 넣기</button>
       <div class="parse-msg" id="pmsg-${i}"></div>
     </div>`;
   }).join('');
 }
 function insertSup(i){
-  const ta=document.getElementById(`eq-${i}`);const p=ta.selectionStart;
-  ta.value=ta.value.slice(0,p)+'^2'+ta.value.slice(p);S.eqTexts[i]=ta.value;ta.focus();ta.setSelectionRange(p+2,p+2);
+  const ta=document.getElementById(`eq-${i}`);
+  const p=ta.selectionStart;
+  ta.value=ta.value.slice(0,p)+'^2'+ta.value.slice(p);
+  S.eqTexts[i]=ta.value;ta.focus();ta.setSelectionRange(p+2,p+2);
+}
+function checkDash(i){
+  // 표기 경고 제거 — 파서가 (x--5) 등 이중부호도 자동 처리함
+  const msg=document.getElementById(`pmsg-${i}`);
+  if(msg)msg.className='parse-msg';
 }
 function parseCircle(txt){
   if(!txt.trim())return{error:'비어 있습니다.'};
-  const t=txt.replace(/²/g,'^2').replace(/\s/g,'');
+  // 공백·²·이중부호 정규화: (x--5)→(x+5), (x+-5)→(x-5) 등
+  let t=txt.replace(/²/g,'^2').replace(/\s/g,'');
+  t=t.replace(/--/g,'+').replace(/\+-/g,'-').replace(/-\+/g,'-').replace(/\+\+/g,'+');
   let a=0;const am=t.match(/\(x([+-])(\d+(?:\.\d+)?)\)/);
   if(am)a=(am[1]==='+'?-1:1)*parseFloat(am[2]);
+  else{const am0=t.match(/\(x\)/);if(am0)a=0;}
   let b=0;const bm=t.match(/\(y([+-])(\d+(?:\.\d+)?)\)/);
   if(bm)b=(bm[1]==='+'?-1:1)*parseFloat(bm[2]);
+  else{const bm0=t.match(/\(y\)/);if(bm0)b=0;}
   let r=null;
   const rp=t.match(/=(\d+(?:\.\d+)?)\^2/);if(rp)r=parseFloat(rp[1]);
   else{const rv=t.match(/=(\d+(?:\.\d+)?)$/);if(rv)r=Math.sqrt(parseFloat(rv[1]));}
@@ -708,7 +813,8 @@ function drawMyCircles(){
     const msg=document.getElementById(`pmsg-${i}`);
     const p=parseCircle(txt);
     if(p.error){msg.className='parse-msg show warn';msg.textContent='⚠ '+p.error;return;}
-    msg.className='parse-msg show ok';msg.textContent=`✔ 중심 (${p.a}, ${p.b}), 반지름 ${p.r.toFixed(2)} km`;
+    msg.className='parse-msg show';msg.style.color='#16a34a';msg.style.background='#f0fdf4';msg.style.border='1px solid #86efac';
+    msg.textContent=`입력한 식 → 중심 (${p.a}, ${p.b}), 반지름 ${p.r.toFixed(2)} km`;
     const{lat,lon}=kmToLL(p.a,p.b);
     const circ=L.circle([lat,lon],{radius:p.r*1000,color:SC[i],weight:2,fillColor:SC[i],fillOpacity:0.05}).addTo(m);
     layers.m2.push(circ);
@@ -716,391 +822,471 @@ function drawMyCircles(){
   saveProgress();
 }
 
-// ═══════════ STEP 6 공통현 ═══════════
+// ═══════════════ STEP 6 내 방정식 표시 ═══════════════
 function renderMyEqs(){
   document.getElementById('myEqDisplay').innerHTML=S.stas.map((c,i)=>{
     const txt=S.eqTexts[i];
-    return`<div class="my-eq-box"><div class="eq-label" style="color:${SC[i]}">관측소 ${String.fromCharCode(65+i)} — ${S.ev.arr[c].name}</div>
-      <div class="eq-text ${txt.trim()?'':'empty'}">${txt.trim()||'아직 작성하지 않았습니다 — 5단계에서 작성하세요.'}</div></div>`;
+    return`<div class="my-eq-box">
+      <div class="eq-label" style="color:${SC[i]}">관측소 ${String.fromCharCode(65+i)} — ${S.ev.arr[c].name}</div>
+      <div class="eq-text ${txt.trim()?'':'empty'}">${txt.trim()||'아직 작성하지 않았습니다 — 5단계에서 작성하세요.'}</div>
+    </div>`;
   }).join('');
 }
+
+// ═══════════════ STEP 6 공통현 ═══════════════
 function renderChordWrite(){
   const pairs=[[0,1],[1,2],[0,2]];
   document.getElementById('chordWriteArea').innerHTML=pairs.map(([p,q],i)=>{
     const n1=S.ev.arr[S.stas[p]].name,n2=S.ev.arr[S.stas[q]].name;
+    const L1=String.fromCharCode(65+p),L2=String.fromCharCode(65+q);
     return`<div class="math-card" style="margin-bottom:12px">
-      <h4 style="color:${SC[i]}">공통현 ${i+1}: 원 ${String.fromCharCode(65+p)}(${n1}) − 원 ${String.fromCharCode(65+q)}(${n2})</h4>
-      <div style="font-size:0.78rem;color:var(--muted);margin-bottom:6px">두 원 방정식을 빼는 과정을 서술하고 <strong>ax + by = c</strong> 형태로 정리하세요.</div>
-      <textarea id="chord-${i}" rows="3" placeholder="계산 과정...&#10;최종: 000x + 000y = 00000" oninput="S.chordTexts[${i}]=this.value">${S.chordTexts[i]}</textarea>
+      <h4 style="color:${SC[i]}">공통현 ${i+1}: 원 ${L1}(${n1}) − 원 ${L2}(${n2})</h4>
+      <div style="font-size:0.78rem;color:var(--muted);margin-bottom:6px">공통현의 방정식을 <strong>ax + by = c</strong> 형태로 입력하세요.</div>
+      <textarea id="chord-${i}" rows="1" placeholder="예) 58x + 372y = 12345"
+        oninput="S.chordTexts[${i}]=this.value">${S.chordTexts[i]}</textarea>
       <div class="hint-sm">소수는 반올림하여 소수점 둘째 자리까지 나타내세요.</div>
     </div>`;
   }).join('');
 }
-</script>
 
-<script>
-// ═══════════ STEP 7 교점 연립 입력 ═══════════
-function initStep6(){
-  renderMyChords();
-  renderIntersect();
-  // 기존 입력이 다 있으면 결과 표시
-  checkAndShowEpicenter();
-}
+// ═══════════════ STEP 7 공통현 연립 → 교점 → 진앙 ═══════════════
+const PAIRS=[[0,1],[1,2],[0,2]];
+
 function renderMyChords(){
-  const pairs=[[0,1],[1,2],[0,2]];
-  document.getElementById('myChordDisplay').innerHTML=pairs.map(([p,q],i)=>{
+  document.getElementById('myChordDisplay').innerHTML=PAIRS.map(([p,q],i)=>{
     const n1=S.ev.arr[S.stas[p]].name,n2=S.ev.arr[S.stas[q]].name;
     const txt=S.chordTexts[i];
-    return`<div class="my-eq-box"><div class="eq-label" style="color:${SC[i]}">공통현 ${i+1} — 원 ${String.fromCharCode(65+p)}(${n1}) − 원 ${String.fromCharCode(65+q)}(${n2})</div>
-      <div class="eq-text ${txt.trim()?'':'empty'}">${txt.trim()||'아직 작성하지 않았습니다 — 6단계에서 작성하세요.'}</div></div>`;
-  }).join('');
-}
-function renderIntersect(){
-  const pairs=[['공통현 1','공통현 2'],['공통현 2','공통현 3'],['공통현 1','공통현 3']];
-  document.getElementById('intersectArea').innerHTML=pairs.map((pr,idx)=>{
-    const prev=S.intersectInputs[idx];
-    return`<div class="intersect-card">
-      <h5 style="color:${SC[idx]}">${pr[0]} ∩ ${pr[1]} 의 교점</h5>
-      <div class="xy-row"><label>x</label>
-        <input type="number" id="ix-${idx}" value="${prev?.[0]??''}" placeholder="km" step="0.01" oninput="onIntersectInput()">
-        <span style="font-size:0.72rem;color:var(--dim)">km</span></div>
-      <div class="xy-row"><label>y</label>
-        <input type="number" id="iy-${idx}" value="${prev?.[1]??''}" placeholder="km" step="0.01" oninput="onIntersectInput()">
-        <span style="font-size:0.72rem;color:var(--dim)">km</span></div>
+    return`<div class="my-eq-box">
+      <div class="eq-label" style="color:${SC[i]}">공통현 ${i+1} — 원 ${String.fromCharCode(65+p)}(${n1}) − 원 ${String.fromCharCode(65+q)}(${n2})</div>
+      <div class="eq-text ${txt.trim()?'':'empty'}">${txt.trim()||'아직 작성하지 않았습니다 — 6단계에서 작성하세요.'}</div>
     </div>`;
   }).join('');
 }
-function onIntersectInput(){
-  for(let idx=0;idx<3;idx++){
-    const x=parseFloat(document.getElementById(`ix-${idx}`)?.value);
-    const y=parseFloat(document.getElementById(`iy-${idx}`)?.value);
-    S.intersectInputs[idx]=[isNaN(x)?null:x,isNaN(y)?null:y];
-  }
-  checkAndShowEpicenter();
-  saveProgress();
+
+// 두 원 i,j 로부터 공통현(직선) ax+by=c 계수
+function chordCoef(pairIdx){
+  const [p,q]=PAIRS[pairIdx];
+  const p1=parseCircle(S.eqTexts[p]||''), p2=parseCircle(S.eqTexts[q]||'');
+  if(p1.error||p2.error)return null;
+  const A=2*(p2.a-p1.a), B=2*(p2.b-p1.b);
+  const C=(p1.r**2-p1.a**2-p1.b**2)-(p2.r**2-p2.a**2-p2.b**2);
+  return{A,B,C};
 }
-function checkAndShowEpicenter(){
-  const pts=S.intersectInputs.filter(p=>p&&p[0]!=null&&p[1]!=null);
-  // 세 교점 모두 입력되면 자동으로 평균 진앙 표시
-  if(pts.length===3){
-    computeAndShowEpicenter(pts);
-    document.getElementById('epicenterResultPanel').style.display='block';
-    document.getElementById('essayPanel').style.display='block';
+// 두 직선 연립 교점 (정답 — 힌트/검증용)
+function trueLineIntersect(c1,c2){
+  if(!c1||!c2)return null;
+  const det=c1.A*c2.B-c2.A*c1.B;
+  if(Math.abs(det)<1e-9)return null;
+  return{x:(c1.C*c2.B-c2.C*c1.B)/det, y:(c1.A*c2.C-c2.A*c1.C)/det};
+}
+
+// 교점 i 는 공통현 IPAIRS[i] 두 개를 연립
+const IPAIRS=[[0,1],[1,2],[0,2]];
+
+function toggleSolveHint(){document.getElementById('solveHint').classList.toggle('hidden');}
+
+function renderIntersectInputs(){
+  document.getElementById('intersectArea').innerHTML=IPAIRS.map(([a,b],i)=>{
+    const xv=S.intersectInputs[i][0], yv=S.intersectInputs[i][1];
+    return`<div class="intersect-card">
+      <h5 style="color:${SC[i]}">교점 ${['①','②','③'][i]}<br>공통현 ${a+1} ∩ 공통현 ${b+1}</h5>
+      <div class="xy-row"><label>x =</label>
+        <input type="number" step="0.01" id="ix-${i}" value="${xv}" placeholder="숫자"
+          oninput="S.intersectInputs[${i}][0]=this.value;checkIntersect()"><span class="unit">km</span></div>
+      <div class="xy-row"><label>y =</label>
+        <input type="number" step="0.01" id="iy-${i}" value="${yv}" placeholder="숫자"
+          oninput="S.intersectInputs[${i}][1]=this.value;checkIntersect()"><span class="unit">km</span></div>
+    </div>`;
+  }).join('');
+  checkIntersect();
+}
+
+function checkIntersect(){
+  // 학생에게 정오를 표시하지 않음. 세 교점이 모두 입력되면 평균 진앙을 표시하고 다음 진행 허용.
+  let allFilled=true;
+  IPAIRS.forEach((_,i)=>{
+    const xv=parseFloat(S.intersectInputs[i][0]);
+    const yv=parseFloat(S.intersectInputs[i][1]);
+    if(isNaN(xv)||isNaN(yv))allFilled=false;
+  });
+  if(allFilled){
     document.getElementById('btn78').disabled=false;
-    // 저장된 essay 복원
-    const essayEl=document.getElementById('essayInput');
-    if(essayEl&&S.essay)essayEl.value=S.essay;
+    computeAndShowEpicenter();
   } else {
     document.getElementById('epicenterResultPanel').style.display='none';
-    document.getElementById('essayPanel').style.display='none';
-    document.getElementById('btn78').disabled=true;
+    document.getElementById('reflectPanel').style.display='none';
   }
 }
-function computeAndShowEpicenter(pts){
+
+function computeAndShowEpicenter(){
   const ev=S.ev;
-  const ax=pts.reduce((s,p)=>s+p[0],0)/pts.length;
-  const ay=pts.reduce((s,p)=>s+p[1],0)/pts.length;
+  const pts=IPAIRS.map((_,i)=>({x:parseFloat(S.intersectInputs[i][0]),y:parseFloat(S.intersectInputs[i][1])}));
+  if(pts.some(p=>isNaN(p.x)||isNaN(p.y)))return;
+
+  const ax=pts.reduce((s,p)=>s+p.x,0)/pts.length;
+  const ay=pts.reduce((s,p)=>s+p.y,0)/pts.length;
   const{lat:cLat,lon:cLon}=kmToLL(ax,ay);
   S.calcEpicenter={lat:cLat,lon:cLon,x:ax,y:ay};
-  const err=Math.sqrt(Math.pow((cLat-ev.lat)*111,2)+Math.pow((cLon-ev.lon)*111*Math.cos(ev.lat*Math.PI/180),2));
+
+  const err=Math.sqrt(
+    Math.pow((cLat-ev.lat)*111,2)+
+    Math.pow((cLon-ev.lon)*111*Math.cos(ev.lat*Math.PI/180),2));
+
   document.getElementById('resultBox').innerHTML=`
-    <div style="font-size:0.8rem;color:var(--muted);margin-bottom:4px">세 교점의 평균 (원점 기준 km)</div>
+    <div style="font-size:0.8rem;color:var(--muted);margin-bottom:4px">교점 3개의 평균</div>
     <div class="result-coords">(${ax.toFixed(2)}, ${ay.toFixed(2)}) km</div>
     <div style="font-size:0.8rem;color:var(--muted);margin:10px 0 4px">계산된 진앙 좌표</div>
     <div class="result-coords">${cLat.toFixed(2)}°N, ${cLon.toFixed(2)}°E</div>
-    <div class="result-err">실제 진앙 (${ev.lat}°N, ${ev.lon}°E)과의 오차: <strong>${err.toFixed(1)} km</strong></div>`;
-  // 지도
+    <div class="result-err">실제 진앙과의 거리(오차): <strong>${err.toFixed(1)} km</strong></div>`;
+
+  document.getElementById('epicenterResultPanel').style.display='block';
+  document.getElementById('reflectPanel').style.display='block';
+
   setTimeout(()=>{
-    const m=initMap('lmap3',true);
-    layers.m3.forEach(l=>m.removeLayer(l));layers.m3=[];
-    // 세 교점 표시
-    S.intersectInputs.forEach((pt,i)=>{
-      if(!pt||pt[0]==null)return;
-      const{lat,lon}=kmToLL(pt[0],pt[1]);
-      const mk=L.circleMarker([lat,lon],{radius:7,fillColor:'#7c3aed',fillOpacity:0.85,color:'#fff',weight:2}).addTo(m);
-      layers.m3.push(mk);
+    if(maps['lmap4']){maps['lmap4'].remove();delete maps['lmap4'];}
+    const m=initMap('lmap4', false);
+
+    // 실제 진앙 ⭐
+    L.marker([ev.lat,ev.lon],{icon:L.divIcon({className:'',
+      html:'<div style="font-size:22px;filter:drop-shadow(0 1px 3px rgba(0,0,0,0.4))">⭐</div>',iconAnchor:[11,11]})}).addTo(m);
+    L.marker([ev.lat,ev.lon],{icon:L.divIcon({className:'sta-label',
+      html:'<span style="color:#d97706;font-weight:700">실제 진앙</span>',iconAnchor:[-12,-4]})}).addTo(m);
+
+    // 교점 3개 (보라)
+    pts.forEach((pt,i)=>{
+      const{lat,lon}=kmToLL(pt.x,pt.y);
+      L.circleMarker([lat,lon],{radius:7,fillColor:'#7c3aed',fillOpacity:0.9,color:'#fff',weight:2}).addTo(m);
     });
     // 오차 삼각형
-    if(pts.length===3){
-      const tri=pts.map(p=>{const ll=kmToLL(p[0],p[1]);return[ll.lat,ll.lon];});
-      tri.push(tri[0]);
-      const poly=L.polygon(tri,{color:'#7c3aed',weight:1.5,opacity:0.5,fillColor:'#7c3aed',fillOpacity:0.06,dashArray:'4 4'}).addTo(m);
-      layers.m3.push(poly);
-    }
-    // 평균 진앙
-    const mk2=L.circleMarker([cLat,cLon],{radius:10,fillColor:'#dc2626',fillOpacity:1,color:'#fff',weight:3}).addTo(m);
-    const lb=L.marker([cLat,cLon],{icon:L.divIcon({className:'sta-label',html:'<span style="color:#dc2626;font-weight:700">평균 진앙</span>',iconAnchor:[-12,-4]})}).addTo(m);
-    layers.m3.push(mk2,lb);
-  },140);
-}
-</script>
+    const triPts=pts.map(p=>{const ll=kmToLL(p.x,p.y);return[ll.lat,ll.lon];});
+    triPts.push(triPts[0]);
+    L.polygon(triPts,{color:'#7c3aed',weight:1.2,fillColor:'#7c3aed',fillOpacity:0.08,dashArray:'4 4'}).addTo(m);
 
-<script>
-// ═══════════ STEP 8 반구 시뮬레이션 ═══════════
-// 작도 원리:
-//  - 관측소를 반구의 중심(꼭대기)에 둠
-//  - 진원거리 d = 반구 반지름
-//  - 진앙거리 Δ = 관측소~진앙 수평거리
-//  - 진앙에서 수직으로 내려 반구 표면과 만나는 점 = 진원
-//  - 깊이 h = √(d² − Δ²)
-let simStepN=0;
-let simRenderer=null,simAnimId=null;
-let simDepthData=null;
+    // 평균 진앙 (빨강)
+    L.circleMarker([cLat,cLon],{radius:11,fillColor:'#dc2626',fillOpacity:1,color:'#fff',weight:3}).addTo(m);
+    L.marker([cLat,cLon],{icon:L.divIcon({className:'sta-label',
+      html:'<span style="color:#dc2626;font-weight:700">내 계산 진앙</span>',iconAnchor:[-12,-5]})}).addTo(m);
 
-function renderSimStep(){
-  const sel=document.getElementById('simStation');
-  sel.innerHTML=S.stas.map((c,i)=>`<option value="${i}">${S.ev.arr[c].name} 관측소</option>`).join('');
-  resetSim();
+    // 오차선
+    L.polyline([[cLat,cLon],[ev.lat,ev.lon]],{color:'#dc2626',weight:1.5,opacity:0.6,dashArray:'5 5'}).addTo(m);
+
+    const allLL=pts.map(p=>{const ll=kmToLL(p.x,p.y);return[ll.lat,ll.lon];});
+    allLL.push([ev.lat,ev.lon],[cLat,cLon]);
+    m.fitBounds(L.latLngBounds(allLL).pad(0.4));
+    m.invalidateSize();
+  },150);
+  saveProgress();
 }
-function resetSim(){
-  simStepN=0;
-  updateSimButtons();
-  computeSimDepth();
-  drawSim();
+
+// step-7 진입
+function initStep7(){
+  renderMyChords();
+  renderIntersectInputs();
+  // 복원: 반영 답안
+  const er=document.getElementById('errorReason'); if(er)er.value=S.errorReason||'';
+}
+// ═══════════════ STEP 8 진원 깊이 — 반구 + 수직원 작도 (실제 진앙 기준) ═══════════════
+// 깊이 = AE에 직교하는 수평 현 HH′의 반 길이 EH (= EF). 단순 연직 투영이 아님.
+function getDepthData(i){
+  const ev=S.ev;const c=S.stas[i];const st=ev.arr[c];const r=st.d;
+  const epiLat=ev.lat, epiLon=ev.lon;
+  const delta=Math.sqrt(Math.pow((st.lat-epiLat)*111,2)+Math.pow((st.lon-epiLon)*111*Math.cos(epiLat*Math.PI/180),2));
+  const h2=r*r-delta*delta;
+  const h=h2>0?Math.sqrt(h2):0;
+  return{name:st.name,code:c,d:r,delta,h};
+}
+
+let constructStage=0;
+// 카메라(궤도) 상태 — 단계가 바뀌어도 시점 유지
+let camState={theta:Math.PI*0.32, phi:Math.PI*0.34, dist:0, target:null};
+let orbitBound=false, depthLoopId=null;
+
+function renderDepthStep(){
+  const ev=S.ev;
+  const sel=document.getElementById('depthStation');
+  sel.innerHTML=S.stas.map((c,i)=>`<option value="${i}">${ev.arr[c].name} 관측소</option>`).join('');
+  resetConstruction();
   renderDepthTable();
 }
-function computeSimDepth(){
-  const i=parseInt(document.getElementById('simStation').value||0);
-  const ev=S.ev;const c=S.stas[i];const st=ev.arr[c];
-  // 진원거리: 학생이 구한 값 (없으면 실제값)
-  const d=getDist(i);
-  // 진앙거리: 항상 실제 진앙 사용 (시뮬레이션 오류 방지)
-  const delta=Math.sqrt(Math.pow((st.lat-ev.lat)*111,2)+Math.pow((st.lon-ev.lon)*111*Math.cos(ev.lat*Math.PI/180),2));
-  // 깊이: d²-Δ²<0 방지 — 실제 진원거리로 보정
-  let dUsed=d, note='';
-  if(d*d-delta*delta<=0){
-    // 학생 값으로 불가능하면 실제 진원거리 사용
-    dUsed=st.d; note='(진원거리를 실제값으로 보정)';
-    if(dUsed*dUsed-delta*delta<=0)dUsed=delta*1.05; // 최후 안전장치
+
+function updateConstructBtns(){
+  for(let n=1;n<=4;n++){
+    const b=document.getElementById('cbtn'+n);if(!b)continue;
+    b.classList.toggle('on', constructStage>=n);
   }
-  const h=Math.sqrt(Math.max(dUsed*dUsed-delta*delta,1));
-  simDepthData={name:st.name,d:dUsed,delta,h,note,realDepth:ev.depth};
-}
-function simStep(n){
-  if(n>simStepN+1)return;
-  simStepN=n;
-  updateSimButtons();
-  drawSim();
-}
-function updateSimButtons(){
-  for(let i=0;i<5;i++){
-    const btn=document.getElementById(`simBtn${i}`);
-    btn.classList.remove('current','done');
-    if(i<simStepN)btn.classList.add('done');
-    if(i===simStepN)btn.classList.add('current');
-    btn.disabled=i>simStepN+1;
-  }
-  const explains=[
-    '① <strong>반구 세우기</strong>: 관측소를 중심으로 진원거리 d를 반지름으로 하는 반구를 세웁니다. 진원은 이 반구 표면 어딘가에 있습니다.',
-    '② <strong>진앙 표시</strong>: 지표면에서 관측소로부터 진앙거리 Δ만큼 떨어진 곳에 진앙을 표시합니다. (실제 진앙 데이터 사용)',
-    '③ <strong>현 그리기</strong>: 관측소와 진앙을 잇는 선을 연장하여, 진앙에서 수직으로 내린 선이 반구와 만나는 점까지 현(chord)을 그립니다.',
-    '④ <strong>현을 지름으로 하는 원</strong>: 관측소-진원을 잇는 현을 지름으로 하는 원을 그리면, 탈레스 정리에 의해 진앙에서의 각이 직각(90°)이 됩니다.',
-    '⑤ <strong>진원 특정</strong>: 진앙에서 수직 아래로 깊이 h = √(d² − Δ²) 만큼 내려간 지점이 바로 <strong>진원</strong>입니다!'
-  ];
-  document.getElementById('simExplain').innerHTML=explains[simStepN];
+  const g=document.getElementById('constructGuide');
+  const msgs={
+    0:'위 버튼을 <strong>①②③④ 순서대로</strong> 눌러 진원과 깊이를 직접 작도해보세요. 3D 화면을 <strong>마우스로 드래그하면 회전</strong>, <strong>스크롤하면 확대/축소</strong>됩니다.',
+    1:'① 관측소를 중심으로 <strong>진원거리를 반지름</strong>으로 하는 <strong>반구(보라색)</strong>를 그렸습니다. 진원은 이 반구면 위에 있습니다. → ②',
+    2:'② 관측소와 진앙을 잇는 <strong>선(파란색)</strong>을 그렸습니다. 이 길이가 진앙거리입니다. → ③',
+    3:'③ 진앙에서 <strong>관측소–진앙 선에 수직인 수평 현(주황색)</strong>을 긋고, 이를 지름으로 하는 <strong>수직원</strong>을 세웠습니다. 마우스로 돌려 입체 구조를 확인하세요. → ④',
+    4:'④ 수직원의 가장 아래 점이 <strong>진원(노란색)</strong>입니다. 핵심: 진앙에서 그은 <strong>수평 현의 반 길이가 곧 진원 깊이</strong>(녹색)와 같습니다. 마우스로 자유롭게 회전·확대하며 관찰하세요.'
+  };
+  if(g)g.innerHTML=msgs[constructStage]||msgs[0];
 }
 
-function drawSim(){
-  if(simAnimId){cancelAnimationFrame(simAnimId);simAnimId=null;}
-  if(!simDepthData)return;
-  const{d,delta,h,name}=simDepthData;
+function constructStep(n){
+  if(n>constructStage+1){
+    const g=document.getElementById('constructGuide');
+    if(g)g.innerHTML='<span style="color:#dc2626">⚠ 앞 단계(①→②→③→④)를 먼저 진행하세요.</span>';
+    return;
+  }
+  constructStage=n;
+  updateConstructBtns();
+  drawDepth3D(false);
+}
+function resetConstruction(){
+  constructStage=0;
+  camState.dist=0; camState.target=null; // 관측소 변경 시 시점 리프레임
+  updateConstructBtns();
+  drawDepth3D(true);
+}
+
+// 캔버스에 마우스 회전/줌 바인딩 (한 번만)
+function bindOrbit(canvas){
+  if(orbitBound)return; orbitBound=true;
+  let drag=false,lx=0,ly=0;
+  canvas.style.cursor='grab';
+  canvas.addEventListener('pointerdown',e=>{drag=true;lx=e.clientX;ly=e.clientY;canvas.style.cursor='grabbing';try{canvas.setPointerCapture(e.pointerId);}catch(_){}});
+  canvas.addEventListener('pointermove',e=>{
+    if(!drag)return;
+    camState.theta-=(e.clientX-lx)*0.008;
+    camState.phi  -=(e.clientY-ly)*0.008;
+    camState.phi=Math.max(0.12,Math.min(Math.PI*0.86,camState.phi));
+    lx=e.clientX;ly=e.clientY;
+  });
+  const end=()=>{drag=false;canvas.style.cursor='grab';};
+  canvas.addEventListener('pointerup',end);
+  canvas.addEventListener('pointerleave',end);
+  canvas.addEventListener('wheel',e=>{
+    e.preventDefault();
+    camState.dist*=(1+Math.sign(e.deltaY)*0.09);
+    camState.dist=Math.max(camState._min||40,Math.min(camState._max||6000,camState.dist));
+  },{passive:false});
+}
+
+// 지속 렌더 루프 (자동 회전 없음 — 사용자가 돌릴 때만 시점 변경)
+function startDepthLoop(){
+  if(depthLoopId)return;
+  function tick(){
+    depthLoopId=requestAnimationFrame(tick);
+    if(threeRenderer&&threeScene&&threeCamera&&camState.target){
+      const t=camState;
+      threeCamera.position.set(
+        t.target.x+t.dist*Math.sin(t.phi)*Math.sin(t.theta),
+        t.target.y+t.dist*Math.cos(t.phi),
+        t.target.z+t.dist*Math.sin(t.phi)*Math.cos(t.theta));
+      threeCamera.lookAt(t.target);
+      threeRenderer.render(threeScene,threeCamera);
+    }
+  }
+  tick();
+}
+
+function mkLine(p1,p2,color,width){
+  const geo=new THREE.BufferGeometry().setFromPoints([p1,p2]);
+  return new THREE.Line(geo,new THREE.LineBasicMaterial({color,linewidth:width||1}));
+}
+function mkLineFat(p1,p2,color,radius){
+  // 굵은 선: 가는 실린더로 표현
+  const dir=new THREE.Vector3().subVectors(p2,p1);
+  const len=dir.length();
+  const geo=new THREE.CylinderGeometry(radius,radius,len,12);
+  const mat=new THREE.MeshStandardMaterial({color,emissive:color,emissiveIntensity:0.25,roughness:0.5});
+  const mesh=new THREE.Mesh(geo,mat);
+  mesh.position.copy(p1).add(p2).multiplyScalar(0.5);
+  mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir.clone().normalize());
+  return mesh;
+}
+
+// Three.js 반구 + 수직원 작도
+//   좌표: A=원점, 지표면=XZ평면(y=0), 깊이=-y, AE는 +x축, 수평 직교(현 HH′)는 z축
+function drawDepth3D(reframe){
+  const i=parseInt(document.getElementById('depthStation').value||0);
+  const dd=getDepthData(i);
+  const{name,d:r,delta,h}=dd;
 
   const wrap=document.getElementById('threedWrap');
   const W=wrap.clientWidth||760;const H=Math.round(W*0.62);
 
-  if(!simRenderer){
-    simRenderer=new THREE.WebGLRenderer({canvas:document.getElementById('simCanvas'),antialias:true,alpha:true});
-    simRenderer.setPixelRatio(window.devicePixelRatio||1);
+  if(!threeRenderer){
+    threeRenderer=new THREE.WebGLRenderer({canvas:document.getElementById('depthCanvas'),antialias:true,alpha:true});
+    threeRenderer.setPixelRatio(window.devicePixelRatio||1);
   }
-  simRenderer.setSize(W,H);
+  threeRenderer.setSize(W,H);
+  bindOrbit(document.getElementById('depthCanvas'));
 
   const scene=new THREE.Scene();
   scene.background=new THREE.Color(0x0a0e1a);
+  threeScene=scene;
+  if(!threeCamera){threeCamera=new THREE.PerspectiveCamera(45,W/H,0.1,8000);}
+  threeCamera.aspect=W/H; threeCamera.updateProjectionMatrix();
 
-  const camera=new THREE.PerspectiveCamera(45,W/H,0.1,5000);
+  // 시점 타깃/거리
+  camState.target=new THREE.Vector3(delta*0.5,-h*0.35,0);
+  camState._min=r*0.5; camState._max=r*6;
+  if(reframe||!camState.dist)camState.dist=r*2.4;
 
   // 조명
-  scene.add(new THREE.AmbientLight(0xffffff,0.55));
-  const sun=new THREE.DirectionalLight(0xfff5e0,1.0);sun.position.set(200,300,200);scene.add(sun);
-  const fill=new THREE.DirectionalLight(0x8ab4f8,0.4);fill.position.set(-150,80,-100);scene.add(fill);
+  scene.add(new THREE.AmbientLight(0xffffff,0.6));
+  const sun=new THREE.DirectionalLight(0xffffff,0.9);sun.position.set(120,260,160);scene.add(sun);
+  const fill=new THREE.DirectionalLight(0x8ab4f8,0.4);fill.position.set(-140,60,-120);scene.add(fill);
 
-  // 관측소는 원점 (0,0,0), 반구는 아래로 향함 (지하)
-  const staPos=new THREE.Vector3(0,0,0);
-  // 진앙: 지표면을 따라 delta 만큼 (x축 방향)
-  const epiPos=new THREE.Vector3(delta,0,0);
-  // 진원: 진앙에서 수직 아래로 h
-  const hypoPos=new THREE.Vector3(delta,-h,0);
+  const A=new THREE.Vector3(0,0,0);
+  const E=new THREE.Vector3(delta,0,0);
+  const Hp=new THREE.Vector3(delta,0, h);   // H
+  const Hm=new THREE.Vector3(delta,0,-h);   // H'
+  const F=new THREE.Vector3(delta,-h,0);    // 진원 (E 바로 아래, 반구면 위)
 
-  // ── 지표면 (반투명 평면) ──
-  const groundGeo=new THREE.PlaneGeometry(d*2.6,d*2.6);
-  const groundMat=new THREE.MeshStandardMaterial({color:0x4ade80,transparent:true,opacity:0.16,side:THREE.DoubleSide});
-  const ground=new THREE.Mesh(groundGeo,groundMat);
-  ground.rotation.x=-Math.PI/2;scene.add(ground);
-  const grid=new THREE.GridHelper(d*2.4,16,0x22c55e,0x166534);grid.position.y=0.3;scene.add(grid);
+  // ── 지표면(XZ평면) + 그리드 ──
+  const ground=new THREE.Mesh(new THREE.PlaneGeometry(r*2.8,r*2.8),
+    new THREE.MeshStandardMaterial({color:0x22c55e,transparent:true,opacity:0.10,side:THREE.DoubleSide}));
+  ground.rotation.x=-Math.PI/2; ground.position.set(delta*0.2,0,0); scene.add(ground);
+  const grid=new THREE.GridHelper(r*2.6,26,0x16a34a,0x14532d);
+  grid.position.set(delta*0.2,0.2,0); scene.add(grid);
 
-  // ── ① 반구 (진원거리 = 반지름, 아래쪽 절반) ──
-  if(simStepN>=0){
-    const hemiGeo=new THREE.SphereGeometry(d,48,32,0,Math.PI*2,Math.PI/2,Math.PI/2);
-    const hemiMat=new THREE.MeshStandardMaterial({color:0x2563eb,transparent:true,opacity:0.13,side:THREE.DoubleSide,wireframe:false});
-    const hemi=new THREE.Mesh(hemiGeo,hemiMat);scene.add(hemi);
-    // 반구 와이어
-    const hemiWire=new THREE.Mesh(hemiGeo,new THREE.MeshBasicMaterial({color:0x4f8ef7,wireframe:true,transparent:true,opacity:0.18}));
-    scene.add(hemiWire);
-    // 반구 밑면 원 (적도)
-    const eqGeo=new THREE.RingGeometry(d-1,d,64);
-    const eqMat=new THREE.MeshBasicMaterial({color:0x4f8ef7,side:THREE.DoubleSide,transparent:true,opacity:0.4});
-    const eq=new THREE.Mesh(eqGeo,eqMat);eq.rotation.x=-Math.PI/2;scene.add(eq);
+  // ── 관측소 A (항상) ──
+  const staMesh=new THREE.Mesh(new THREE.ConeGeometry(r*0.03,r*0.1,4),
+    new THREE.MeshStandardMaterial({color:0x2563eb,roughness:0.5}));
+  staMesh.position.set(0,r*0.05,0); scene.add(staMesh);
+  scene.add(label3D('관측소', new THREE.Vector3(0,r*0.13,0), '#60a5fa'));
+
+  // ─────────── STAGE 1+: 반구 (반투명 보라) ───────────
+  if(constructStage>=1){
+    const hemiGeo=new THREE.SphereGeometry(r,56,40,0,Math.PI*2,Math.PI/2,Math.PI/2);
+    scene.add(new THREE.Mesh(hemiGeo,new THREE.MeshStandardMaterial({
+      color:0x9b6bff,transparent:true,opacity:0.16,side:THREE.DoubleSide,roughness:0.7,metalness:0.05})));
+    scene.add(new THREE.Mesh(hemiGeo.clone(),new THREE.MeshBasicMaterial({
+      color:0xb794ff,wireframe:true,transparent:true,opacity:0.13})));
+    // 지표면 적도 원(반지름 r)
+    const rim=[];for(let a=0;a<=72;a++){const t=a/72*Math.PI*2;rim.push(new THREE.Vector3(r*Math.cos(t),0,r*Math.sin(t)));}
+    scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(rim),
+      new THREE.LineBasicMaterial({color:0xc4b5fd,transparent:true,opacity:0.5})));
   }
 
-  // ── 관측소 마커 ──
-  const staCone=new THREE.Mesh(new THREE.ConeGeometry(d*0.04,d*0.1,4),
-    new THREE.MeshStandardMaterial({color:0x2563eb,metalness:0.3,roughness:0.5}));
-  staCone.position.set(0,d*0.05,0);scene.add(staCone);
-  // 관측소 라벨 (스프라이트)
-  addLabel(scene,`${name} 관측소`,new THREE.Vector3(0,d*0.14,0),'#4f8ef7');
-
-  // ── ② 진앙 ──
-  if(simStepN>=1){
-    const epiMark=new THREE.Mesh(new THREE.SphereGeometry(d*0.025,16,16),
-      new THREE.MeshStandardMaterial({color:0xfbbf24,emissive:0xfbbf24,emissiveIntensity:0.3}));
-    epiMark.position.copy(epiPos);scene.add(epiMark);
-    addLabel(scene,'진앙',epiPos.clone().add(new THREE.Vector3(0,d*0.08,0)),'#fbbf24');
-    // 진앙거리 선 (지표)
-    scene.add(mkLine3(staPos,epiPos,0x38bdf8,2));
-    addLabel(scene,`Δ=${delta.toFixed(0)}km`,new THREE.Vector3(delta/2,d*0.05,0),'#38bdf8',true);
+  // ─────────── STAGE 2+: 진앙 E + 선분 AE (파랑) ───────────
+  if(constructStage>=2){
+    scene.add(mkLineFat(A,E,0x2563eb,r*0.006));
+    const eMesh=new THREE.Mesh(new THREE.SphereGeometry(r*0.028,24,24),
+      new THREE.MeshStandardMaterial({color:0xef4444,emissive:0xef4444,emissiveIntensity:0.5}));
+    eMesh.position.copy(E); scene.add(eMesh);
+    scene.add(label3D('진앙', new THREE.Vector3(delta,r*0.12,0), '#fca5a5'));
+    scene.add(label3D('진앙거리 '+delta.toFixed(1)+' km', new THREE.Vector3(delta*0.5,r*0.06,0), '#93c5fd'));
   }
 
-  // ── ③ 현 (관측소→진원) ──
-  if(simStepN>=2){
-    scene.add(mkLine3(staPos,hypoPos,0xfbbf24,3));
-    addLabel(scene,`현 d=${d.toFixed(0)}km`,new THREE.Vector3(delta*0.5,-h*0.5,0),'#fbbf24',true);
+  // ─────────── STAGE 3+: 직교 현 HH′(주황) + 수직원 ───────────
+  if(constructStage>=3){
+    // 지표면 위, AE에 수직인 수평 직선(현 HH′)을 충분히 길게
+    const ext=Math.max(h*1.35,r*0.25);
+    scene.add(mkLine(new THREE.Vector3(delta,0,-ext),new THREE.Vector3(delta,0,ext),0xfb923c,1));
+    // 현 HH′ 강조(주황 굵게)
+    scene.add(mkLineFat(Hm,Hp,0xf97316,r*0.005));
+    // 현이 반구와 만나는 두 점
+    [Hp,Hm].forEach((pos)=>{
+      const m=new THREE.Mesh(new THREE.SphereGeometry(r*0.02,18,18),
+        new THREE.MeshStandardMaterial({color:0xfdba74,emissive:0xfb923c,emissiveIntensity:0.4}));
+      m.position.copy(pos);scene.add(m);
+    });
+    // 수직원: 평면 x=delta, 중심 E, 반지름 h. (y=-h sinφ, z=h cosφ)
+    const vc=[];for(let a=0;a<=96;a++){const t=a/96*Math.PI*2;vc.push(new THREE.Vector3(delta,-h*Math.sin(t),h*Math.cos(t)));}
+    scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(vc),
+      new THREE.LineBasicMaterial({color:0xfacc15,transparent:true,opacity:0.55})));
+    // 수직원 ∩ 반구 = 아래쪽 반원(굵게 강조: 단면 곡선)
+    const arc=[];for(let a=0;a<=48;a++){const t=a/48*Math.PI;arc.push(new THREE.Vector3(delta,-h*Math.sin(t),h*Math.cos(t)));}
+    for(let k=0;k<arc.length-1;k++)scene.add(mkLineFat(arc[k],arc[k+1],0xfde047,r*0.004));
   }
 
-  // ── ④ 현을 지름으로 하는 원 (탈레스) ──
-  if(simStepN>=3){
-    const midC=staPos.clone().add(hypoPos).multiplyScalar(0.5);
-    const radiusC=staPos.distanceTo(hypoPos)/2;
-    // 현이 놓인 평면(xy평면)에서의 원
-    const circPts=[];
-    const dir=hypoPos.clone().sub(staPos).normalize();
-    // 현 방향과 수직인 평면 법선 (z축)
-    const segs=64;
-    for(let k=0;k<=segs;k++){
-      const ang=k/segs*Math.PI*2;
-      // xy 평면 내 원: 중심 midC, 반지름 radiusC
-      // 현 방향 dir, 그에 수직인 perp
-      const perp=new THREE.Vector3(-dir.y,dir.x,0);
-      const px=midC.x+radiusC*(Math.cos(ang)*dir.x+Math.sin(ang)*perp.x);
-      const py=midC.y+radiusC*(Math.cos(ang)*dir.y+Math.sin(ang)*perp.y);
-      circPts.push(new THREE.Vector3(px,py,0));
-    }
-    const circGeo=new THREE.BufferGeometry().setFromPoints(circPts);
-    scene.add(new THREE.Line(circGeo,new THREE.LineBasicMaterial({color:0xf74fa8,transparent:true,opacity:0.7})));
-    // 직각 표시 (진앙에서)
-    if(simStepN>=3){
-      scene.add(mkLine3(epiPos,staPos,0xffffff,1,0.3));
-      scene.add(mkLine3(epiPos,hypoPos,0xffffff,1,0.3));
-    }
+  // ─────────── STAGE 4: 진원 F + 깊이 EH/EF (녹색) ───────────
+  if(constructStage>=4){
+    const fMesh=new THREE.Mesh(new THREE.SphereGeometry(r*0.032,28,28),
+      new THREE.MeshStandardMaterial({color:0xffe14d,emissive:0xfacc15,emissiveIntensity:0.8}));
+    fMesh.position.copy(F);scene.add(fMesh);
+    const fGlow=new THREE.Mesh(new THREE.SphereGeometry(r*0.06,16,16),
+      new THREE.MeshBasicMaterial({color:0xfde047,transparent:true,opacity:0.16,side:THREE.BackSide}));
+    fGlow.position.copy(F);scene.add(fGlow);
+    scene.add(label3D('진원',F.clone().add(new THREE.Vector3(0,-r*0.07,0)),'#fde047'));
+    // 수평 반현 (굵은 녹색) — 이 길이가 곧 깊이
+    scene.add(mkLineFat(E,Hp,0x22c55e,r*0.008));
+    scene.add(label3D('깊이와 같은 길이',E.clone().add(Hp).multiplyScalar(0.5).add(new THREE.Vector3(0,r*0.05,0)),'#86efac'));
+    // 연직 깊이 (같은 길이임을 보여줌)
+    scene.add(mkLineFat(E,F,0x16a34a,r*0.005));
+    scene.add(label3D('진원 깊이 '+h.toFixed(1)+' km',F.clone().add(new THREE.Vector3(delta*0.0,h*0.5,0)).add(new THREE.Vector3(r*0.04,0,0)),'#86efac'));
+    // 직각 표시 (E에서 AE ⟂ HH′)
+    const sq=r*0.045;
+    scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(delta-sq,0,0),new THREE.Vector3(delta-sq,0,sq),new THREE.Vector3(delta,0,sq)]),
+      new THREE.LineBasicMaterial({color:0xffffff,transparent:true,opacity:0.7})));
   }
 
-  // ── ⑤ 진원 ──
-  if(simStepN>=4){
-    // 깊이 선
-    scene.add(mkLine3(epiPos,hypoPos,0xf87171,3));
-    addLabel(scene,`깊이 h=${h.toFixed(1)}km`,new THREE.Vector3(delta+d*0.06,-h*0.5,0),'#f87171',true);
-    // 진원 (발광 구)
-    const hypoMesh=new THREE.Mesh(new THREE.SphereGeometry(d*0.035,24,24),
-      new THREE.MeshStandardMaterial({color:0xff4444,emissive:0xff2222,emissiveIntensity:0.8}));
-    hypoMesh.position.copy(hypoPos);scene.add(hypoMesh);
-    const glow=new THREE.Mesh(new THREE.SphereGeometry(d*0.07,16,16),
-      new THREE.MeshBasicMaterial({color:0xff6666,transparent:true,opacity:0.15,side:THREE.BackSide}));
-    glow.position.copy(hypoPos);scene.add(glow);
-    addLabel(scene,'진원',hypoPos.clone().add(new THREE.Vector3(d*0.08,-d*0.04,0)),'#ff6666');
-  }
+  // ── 라벨 오버레이 ──
+  let ov=`<div style="font-weight:700;color:#fff;margin-bottom:4px">${name} 관측소 — 진원거리 ${r.toFixed(1)} km</div>`;
+  ov+=`<span style="color:#9b6bff">⬤</span> 반구 (가능한 진원 위치)<br>`;
+  if(constructStage>=2)ov+=`<span style="color:#2563eb">━</span> 진앙거리 = ${delta.toFixed(1)} km<br>`;
+  if(constructStage>=3)ov+=`<span style="color:#f97316">━</span> 수평 직교 현 (관측소–진앙 선에 수직)<br>`;
+  if(constructStage>=4)ov+=`<span style="color:#22c55e">━</span> 진원 깊이 = ${h.toFixed(1)} km`;
+  ov+=`<div style="margin-top:6px;font-size:0.66rem;opacity:0.7">🖱 드래그: 회전 · 스크롤: 확대/축소</div>`;
+  document.getElementById('threedOverlay').innerHTML=ov;
 
-  // 카메라 공전
-  let ang=0.3;
-  const camR=d*2.3;
-  function animate(){
-    simAnimId=requestAnimationFrame(animate);
-    ang+=0.003;
-    camera.position.x=delta*0.5+camR*Math.sin(ang);
-    camera.position.z=camR*Math.cos(ang);
-    camera.position.y=d*0.55;
-    camera.lookAt(delta*0.4,-h*0.35,0);
-    simRenderer.render(scene,camera);
-  }
-  animate();
+  startDepthLoop();
 }
 
-function mkLine3(p1,p2,color,width=2,opacity=1){
-  const geo=new THREE.BufferGeometry().setFromPoints([p1.clone(),p2.clone()]);
-  return new THREE.Line(geo,new THREE.LineBasicMaterial({color,linewidth:width,transparent:opacity<1,opacity}));
-}
-function addLabel(scene,text,pos,color,small=false){
-  const cvs=document.createElement('canvas');
-  const ctx=cvs.getContext('2d');
-  const fs=small?28:34;
-  cvs.width=256;cvs.height=64;
-  ctx.font=`bold ${fs}px sans-serif`;
-  ctx.fillStyle=color;
-  ctx.textAlign='center';ctx.textBaseline='middle';
+// 3D 텍스트 라벨(스프라이트)
+function label3D(text,pos,color){
+  const cv=document.createElement('canvas');cv.width=256;cv.height=64;
+  const ctx=cv.getContext('2d');
+  ctx.fillStyle=color||'#fff';ctx.font='bold 30px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
   ctx.fillText(text,128,32);
-  const tex=new THREE.CanvasTexture(cvs);
-  const spr=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true}));
-  spr.position.copy(pos);
-  const scale=simDepthData.d*0.5;
-  spr.scale.set(scale,scale*0.25,1);
-  scene.add(spr);
+  const tex=new THREE.CanvasTexture(cv);
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false}));
+  sp.position.copy(pos);
+  const i=parseInt(document.getElementById('depthStation').value||0);
+  const r=getDepthData(i).d;
+  sp.scale.set(r*0.34,r*0.085,1);
+  return sp;
 }
 
 function renderDepthTable(){
   const ev=S.ev;
-  let html='<table><thead><tr><th>관측소</th><th>진원거리 d</th><th>진앙거리 Δ</th><th>깊이 h=√(d²−Δ²)</th></tr></thead><tbody>';
+  let html='<table><thead><tr><th>관측소</th><th>진원거리 d</th><th>진앙거리 Δ</th><th>깊이 h</th></tr></thead><tbody>';
   let sum=0,cnt=0;
-  S.stas.forEach((c,i)=>{
-    const st=ev.arr[c];
-    const d=getDist(i);
-    const delta=Math.sqrt(Math.pow((st.lat-ev.lat)*111,2)+Math.pow((st.lon-ev.lon)*111*Math.cos(ev.lat*Math.PI/180),2));
-    let dUsed=d;if(d*d-delta*delta<=0)dUsed=st.d;
-    const h=Math.sqrt(Math.max(dUsed*dUsed-delta*delta,1));
-    html+=`<tr><td><span class="sdot" style="background:${SC[i]}"></span>${st.name}</td>
-      <td class="dv">${d.toFixed(1)} km</td><td class="pv">${delta.toFixed(1)} km</td><td class="psv">${h.toFixed(1)} km</td></tr>`;
-    sum+=h;cnt++;
+  S.stas.forEach((_,i)=>{
+    const dd=getDepthData(i);
+    html+=`<tr><td><span class="sdot" style="background:${SC[i]}"></span>${dd.name}</td>
+      <td class="dv">${dd.d.toFixed(1)} km</td>
+      <td class="pv">${dd.delta.toFixed(1)} km</td>
+      <td class="psv">${dd.h.toFixed(1)} km</td></tr>`;
+    sum+=dd.h;cnt++;
   });
   html+='</tbody></table>';
   const avg=sum/cnt;
-  html+=`<div class="result-box" style="margin-top:14px"><div style="font-size:0.8rem;color:var(--muted)">세 관측소 평균 깊이</div>
+  html+=`<div class="result-box" style="margin-top:14px">
+    <div style="font-size:0.8rem;color:var(--muted)">세 관측소 평균 깊이</div>
     <div class="result-coords">${avg.toFixed(1)} km</div>
-    <div class="result-err">실제 진원 깊이: <strong>${ev.depth} km</strong></div></div>`;
+    <div class="result-err">실제 진원 깊이: <strong>${ev.depth} km</strong></div>
+  </div>`;
   document.getElementById('depthResult').innerHTML=html;
 }
-</script>
-
-<script>
-// ═══════════ 저장 / 제출 ═══════════
+// ═══════════════ 저장/제출 ═══════════════
 function buildSub(){
-  return{group:S.group,cls:S.cls,names:S.names,submittedAt:new Date().toISOString(),
+  return{cls:S.cls,grp:S.grp,members:S.members,name:S.user,submittedAt:new Date().toISOString(),
     event:S.ev?{id:S.ev.id,name:S.ev.name,mag:S.ev.mag}:null,
     stations:S.stas.map(c=>({code:c,name:S.ev?.arr[c]?.name})),
-    origin:S.origin,studentDists:S.studentDists,eqTexts:S.eqTexts,chordTexts:S.chordTexts,
-    intersectInputs:S.intersectInputs,calcEpicenter:S.calcEpicenter,essay:S.essay,maxStep:S.maxStep};
+    origin:S.origin,psInputs:S.psInputs,distInputs:S.distInputs,
+    eqTexts:S.eqTexts,chordTexts:S.chordTexts,
+    intersectInputs:S.intersectInputs,calcEpicenter:S.calcEpicenter,
+    errorReason:S.errorReason,maxStep:S.maxStep};
 }
-function subKey(){return `${S.cls}_${S.group}_${S.names.join('-')}`.replace(/\s/g,'_');}
 async function saveProgress(){
-  if(!S.group||!S.cls)return;
-  if(window._fbSave)await window._fbSave(`submissions/${subKey()}`,buildSub());
+  if(!S.cls||!S.grp)return;
+  const key=`${S.cls}_${S.grp}`.replace(/\s/g,'_');
+  if(window._fbSave)await window._fbSave(`submissions/${key}`,buildSub());
 }
-async function submitWork(){
-  const ok=await saveProgress();
-  alert('✅ 답안이 제출되었습니다! 수고했어요.'+(window._fbReady?'':'\n(현재 로컬에 저장되었습니다)'));
-}
+async function submitWork(){await saveProgress();alert('✅ 답안이 제출되었습니다! 수고했어요.');}
 
-// ═══════════ 교사 대시보드 ═══════════
+// ═══════════════ 교사 대시보드 ═══════════════
 let _allSubs={},_filterCls='전체';
 async function loadSubmissions(){
   if(!window._fbGetAll)return;
-  document.getElementById('subList').innerHTML='<div class="panel" style="text-align:center;color:var(--muted);padding:24px">불러오는 중...</div>';
   _allSubs=await window._fbGetAll();renderTeacherDash();
 }
 function renderTeacherDash(){
@@ -1110,8 +1296,7 @@ function renderTeacherDash(){
   document.getElementById('classFilter').innerHTML=classes.map(c=>`
     <button class="orig-btn ${_filterCls===c?'on':''}" onclick="_filterCls='${c}';renderTeacherDash()">
       ${c}${c==='전체'?'':' ('+subs.filter(s=>s.cls===c).length+')'}</button>`).join('');
-  const filtered=subs.filter(s=>_filterCls==='전체'||s.cls===_filterCls)
-    .sort((a,b)=>(a.cls+a.group).localeCompare(b.cls+b.group,'ko',{numeric:true}));
+  const filtered=subs.filter(s=>_filterCls==='전체'||s.cls===_filterCls).sort((a,b)=>(a.cls+(a.grp||'')+a.name).localeCompare(b.cls+(b.grp||'')+b.name));
   document.getElementById('subList').innerHTML=filtered.length===0
     ?'<div class="panel" style="color:var(--muted);text-align:center;padding:32px">제출된 답안이 없습니다.</div>'
     :filtered.map((sub,idx)=>{
@@ -1119,7 +1304,7 @@ function renderTeacherDash(){
       const col=pct>=100?'#16a34a':pct>=50?'#d97706':'#dc2626';
       return`<div class="sub-card">
         <div class="sub-header" onclick="toggleSub(${idx})">
-          <div><div class="sub-name">${sub.cls} ${sub.group} · ${(sub.names||[]).join(', ')}</div>
+          <div><div class="sub-name">${sub.cls} ${sub.grp||''} · ${sub.name}</div>
             <div class="sub-meta">${sub.event?.name||'지진 미선택'} · ${new Date(sub.submittedAt||Date.now()).toLocaleString('ko')}</div></div>
           <div style="margin-left:auto;font-family:var(--mono);font-size:0.82rem;color:${col}">${pct}% (${prog}/8)</div>
           <span style="margin-left:10px;color:var(--muted)">▼</span>
@@ -1141,8 +1326,12 @@ function getAnswerData(sub){
     const dlon=(ev.arr[c].lon-oLon)*111*Math.cos((oLat+ev.arr[c].lat)/2*Math.PI/180);
     return{a:Math.round(dlon),b:Math.round(dlat),r:ev.arr[c].d};
   });
-  const mkC=(p,q)=>{const e1=xy[p],e2=xy[q];const A=2*(e2.a-e1.a),B=2*(e2.b-e1.b);
-    const C=(e1.r**2-e1.a**2-e1.b**2)-(e2.r**2-e2.a**2-e2.b**2);return{A,B,C};};
+  const mkC=(p,q)=>{
+    const e1=xy[p],e2=xy[q];
+    const A=2*(e2.a-e1.a),B=2*(e2.b-e1.b);
+    const C=(e1.r**2-e1.a**2-e1.b**2)-(e2.r**2-e2.a**2-e2.b**2);
+    return{A,B,C};
+  };
   const ch=[mkC(0,1),mkC(1,2),mkC(0,2)];
   const det=ch[0].A*ch[1].B-ch[1].A*ch[0].B;
   const ep=Math.abs(det)>0.001?{x:(ch[0].C*ch[1].B-ch[1].C*ch[0].B)/det,y:(ch[0].A*ch[1].C-ch[1].A*ch[0].C)/det}:null;
@@ -1152,17 +1341,23 @@ function getAnswerData(sub){
 function renderSubDetail(sub){
   const ad=getAnswerData(sub);let html='';
   html+=`<div class="sub-section">기본 정보</div>`;
-  html+=`<div class="sub-row"><div class="sub-label">조원</div><div class="sub-val">${(sub.names||[]).join(', ')}</div></div>`;
+  html+=`<div class="sub-row"><div class="sub-label">학급 / 조</div><div class="sub-val">${sub.cls||'—'} ${sub.grp||''}</div></div>`;
+  html+=`<div class="sub-row"><div class="sub-label">조원</div><div class="sub-val">${(sub.members||[sub.name]).join(', ')||'—'}</div></div>`;
   html+=`<div class="sub-row"><div class="sub-label">선택 지진</div><div class="sub-val">${sub.event?.name||'—'} (M${sub.event?.mag||'?'})</div></div>`;
   html+=`<div class="sub-row"><div class="sub-label">관측소</div><div class="sub-val">${(sub.stations||[]).map((s,i)=>`<span style="color:${SC[i]}">${s.name}(${s.code})</span>`).join(' · ')}</div></div>`;
   html+=`<div class="sub-row"><div class="sub-label">원점</div><div class="sub-val">${sub.origin==='centroid'?'무게중심':sub.origin||'—'}</div></div>`;
 
-  html+=`<div class="sub-section">진원거리 (학생 계산)</div>`;
-  (sub.studentDists||[]).forEach((dval,i)=>{
-    const ans=ad?ad.xy[i].r:null;
-    html+=`<div class="sub-row"><div class="sub-label">${sub.stations?.[i]?.name||'관측소 '+(i+1)}</div>
-      <div><div class="sub-val">${dval?dval+' km':'<em style="opacity:0.4">미입력</em>'}</div>${ans?`<div class="sub-val ans" style="font-size:0.72rem">정답: ${ans} km</div>`:''}</div></div>`;
-  });
+  if(sub.psInputs||sub.distInputs){
+    html+=`<div class="sub-section">PS시 · 진원거리 (학생 계산)</div>`;
+    (sub.stations||[]).forEach((s,i)=>{
+      const ev=ad?.ev;const a=ev?.arr[s.code];
+      const psT=a?Math.round((a.st-a.pt)*10)/10:null;const dT=a?a.d:null;
+      const ps=sub.psInputs?.[i]??'';const di=sub.distInputs?.[i]??'';
+      const ans=a?`<div class="sub-val ans" style="font-size:0.72rem;margin-top:2px">정답: PS시 ${psT}s · 진원거리 ${dT}km</div>`:'';
+      html+=`<div class="sub-row"><div class="sub-label">${s.name}</div>
+        <div><div class="sub-val">PS시 ${ps||'—'}s · 진원거리 ${di||'—'}km</div>${ans}</div></div>`;
+    });
+  }
 
   html+=`<div class="sub-section">원의 방정식</div>`;
   (sub.eqTexts||[]).forEach((t,i)=>{
@@ -1178,19 +1373,21 @@ function renderSubDetail(sub){
     html+=`<div class="sub-row"><div class="sub-label">공통현 ${i+1}</div>
       <div><div class="sub-val">${t||'<em style="opacity:0.4">미작성</em>'}</div>${ans}</div></div>`;
   });
-  html+=`<div class="sub-section">교점 (학생 입력)</div>`;
+  html+=`<div class="sub-section">연립으로 구한 교점</div>`;
+  const PLABELS=['교점① (공통현1∩2)','교점② (공통현2∩3)','교점③ (공통현1∩3)'];
   (sub.intersectInputs||[]).forEach((pt,i)=>{
-    const v=pt&&pt[0]!=null?`(${pt[0]}, ${pt[1]})`:null;
-    html+=`<div class="sub-row"><div class="sub-label">교점 ${i+1}</div><div class="sub-val">${v||'<em style="opacity:0.4">미입력</em>'}</div></div>`;
+    const xv=(pt&&(pt.x??pt[0]));const yv=(pt&&(pt.y??pt[1]));
+    const has=xv!==''&&xv!=null&&yv!==''&&yv!=null;
+    html+=`<div class="sub-row"><div class="sub-label">${PLABELS[i]||'교점 '+(i+1)}</div><div class="sub-val">${has?`(${xv}, ${yv})`:'<em style="opacity:0.4">미입력</em>'}</div></div>`;
   });
   if(ad?.ep)html+=`<div class="sub-row"><div class="sub-label">정답 진앙(km)</div><div class="sub-val ans">(${ad.ep.x.toFixed(2)}, ${ad.ep.y.toFixed(2)})</div></div>`;
   if(sub.calcEpicenter&&ad){
     const err=Math.sqrt(Math.pow((sub.calcEpicenter.lat-ad.ev.lat)*111,2)+Math.pow((sub.calcEpicenter.lon-ad.ev.lon)*111*Math.cos(ad.ev.lat*Math.PI/180),2));
-    html+=`<div class="sub-row"><div class="sub-label">학생 진앙</div><div class="sub-val">${sub.calcEpicenter.lat?.toFixed(2)}°N, ${sub.calcEpicenter.lon?.toFixed(2)}°E</div></div>`;
+    html+=`<div class="sub-row"><div class="sub-label">계산 진앙(km)</div><div class="sub-val">(${sub.calcEpicenter.x?.toFixed?.(2)??'?'}, ${sub.calcEpicenter.y?.toFixed?.(2)??'?'})</div></div>`;
     html+=`<div class="sub-row"><div class="sub-label">실제 진앙 오차</div><div class="sub-val ${err<30?'ans':''}">${err.toFixed(1)} km</div></div>`;
   }
-  html+=`<div class="sub-section">오차 발생 이유 (서술형 답안)</div>`;
-  html+=`<div class="sub-val essay">${sub.essay||'<em style="opacity:0.4;font-style:italic">미작성</em>'}</div>`;
+  html+=`<div class="sub-section">생각해보기 — 오차가 발생한 이유</div>`;
+  html+=`<div class="sub-row"><div class="sub-label">학생 답안</div><div class="sub-val ans" style="white-space:pre-wrap">${sub.errorReason?sub.errorReason.replace(/</g,'&lt;'):'<em style="opacity:0.4">미작성</em>'}</div></div>`;
   return html;
 }
 
@@ -1199,4 +1396,3 @@ renderEqGrid();
 </script>
 </body>
 </html>
-
